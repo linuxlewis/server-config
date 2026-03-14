@@ -59,10 +59,3 @@
     group: "1000"
     mode: "0755"
 
-- name: Create OpenClaw data directory
-  ansible.builtin.file:
-    path: /opt/services/openclaw
-    state: directory
-    owner: "1000"
-    group: "1000"
-    mode: "0755"

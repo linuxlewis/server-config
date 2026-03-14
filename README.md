@@ -76,8 +76,7 @@ cd ../docker && docker compose up -d
 | Service | URL | Description |
 |---------|-----|-------------|
 | code-server | `dev.home` | VS Code in the browser |
-| OpenClaw | `claw.home` | AI assistant gateway |
-| PostgreSQL | internal | Database |
+|PostgreSQL | internal | Database |
 | Redis | internal | Cache |
 | Caddy | ports 80/443 | Reverse proxy with auto TLS |
 
