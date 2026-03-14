@@ -2,16 +2,6 @@
 # Uses internal TLS for *.home domains
 
 dev.home {
-	reverse_proxy code-server:8443
-	tls internal
-}
-
-ai.home {
-	reverse_proxy open-webui:8080
-	tls internal
-}
-
-automation.home {
-	reverse_proxy n8n:5678
+	reverse_proxy code-server:8080
 	tls internal
 }

@@ -15,17 +15,14 @@ services:
       - proxy
 
   code-server:
-    image: lscr.io/linuxserver/code-server:latest
+    image: codercom/code-server:latest
     container_name: code-server
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-      - DEFAULT_WORKSPACE=/config/workspace
+      - PASSWORD=${CODE_SERVER_PASSWORD:-changeme}
     volumes:
-      - /opt/services/code-server:/config
-      - /home/dev/projects:/config/workspace
+      - /opt/services/code-server:/home/coder/.local/share/code-server
+      - /home/dev/projects:/home/coder/projects
     networks:
       - proxy
 
@@ -61,39 +58,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    volumes:
-      - /opt/services/open-webui:/app/backend/data
-    networks:
-      - proxy
-      - backend
-
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: n8n
-    restart: unless-stopped
-    environment:
-      - N8N_HOST=${N8N_HOST:-automation.home}
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=https
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-devdb}
-      - DB_POSTGRESDB_USER=${POSTGRES_USER:-dev}
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-    volumes:
-      - /opt/services/n8n:/home/node/.n8n
-    networks:
-      - proxy
-      - backend
-    depends_on:
-      postgres:
-        condition: service_healthy
 
 networks:
   proxy:

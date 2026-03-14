@@ -75,9 +75,7 @@ cd ../docker && docker compose up -d
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| code-server | `dev.home` | Remote VS Code IDE |
-| open-webui | `ai.home` | AI chat interface |
-| n8n | `automation.home` | Workflow automation |
+| code-server | `dev.home` | VS Code in the browser |
 | PostgreSQL | internal | Database |
 | Redis | internal | Cache |
 | Caddy | ports 80/443 | Reverse proxy with auto TLS |
@@ -144,7 +142,7 @@ Copy `docker/.env.example` to `docker/.env` and set:
 | `POSTGRES_PASSWORD` | PostgreSQL password (required) |
 | `POSTGRES_USER` | PostgreSQL user (default: `dev`) |
 | `POSTGRES_DB` | PostgreSQL database (default: `devdb`) |
-| `N8N_HOST` | n8n hostname (default: `automation.home`) |
+| `CODE_SERVER_PASSWORD` | VS Code server password (default: `changeme`) |
 
 ### Tailscale
 
