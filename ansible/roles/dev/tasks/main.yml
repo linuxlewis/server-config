@@ -36,6 +36,13 @@
     global: true
     state: latest
 
+- name: Install OpenClaw gateway daemon with Tailscale Serve
+  ansible.builtin.command:
+    cmd: openclaw gateway install --tailscale serve
+  args:
+    creates: /etc/systemd/system/openclaw-gateway.service
+  become_user: "{{ username }}"
+
 - name: Install OpenAI Codex CLI
   community.general.npm:
     name: "@openai/codex"
