@@ -102,6 +102,12 @@
     global: true
     state: latest
 
+- name: Install Bitwarden CLI
+  community.general.npm:
+    name: "@bitwarden/cli"
+    global: true
+    state: latest
+
 - name: Create dev workspace directories
   ansible.builtin.file:
     path: "/home/{{ username }}/{{ item }}"
