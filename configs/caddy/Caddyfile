@@ -1,7 +1,8 @@
 # Caddy reverse proxy configuration
-# Uses internal TLS for *.home domains
+# Used for public-facing apps exposed via Cloudflare Tunnel
+# Private services (code-server, open-webui) are served via Tailscale Serve
 
-dev.home {
-	reverse_proxy code-server:8080
-	tls internal
-}
+# Example: public app behind Cloudflare Tunnel
+# app.example.com {
+# 	reverse_proxy app-container:8080
+# }

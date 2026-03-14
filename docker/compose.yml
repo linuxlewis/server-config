@@ -20,9 +20,22 @@ services:
     restart: unless-stopped
     environment:
       - PASSWORD=${CODE_SERVER_PASSWORD:-changeme}
+    ports:
+      - "127.0.0.1:8080:8080"
     volumes:
       - /opt/services/code-server:/home/coder/.local/share/code-server
       - /home/dev/projects:/home/coder/projects
+    networks:
+      - proxy
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:8080"
+    volumes:
+      - /opt/services/open-webui:/app/backend/data
     networks:
       - proxy
 

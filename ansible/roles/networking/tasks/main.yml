@@ -44,6 +44,51 @@
   when: tailscale_authkey | length > 0
   changed_when: false
 
+- name: Configure Tailscale Serve for code-server
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https=443 http://localhost:8080
+  changed_when: false
+
+- name: Configure Tailscale Serve for OpenClaw gateway
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https=8443 http://localhost:3000
+  changed_when: false
+
+- name: Install cloudflared (RedHat)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Add cloudflared RPM repo
+      ansible.builtin.yum_repository:
+        name: cloudflared
+        description: Cloudflare Tunnel
+        baseurl: https://pkg.cloudflare.com/cloudflared/rpm
+        gpgcheck: false
+        enabled: true
+
+    - name: Install cloudflared (Fedora)
+      ansible.builtin.dnf:
+        name: cloudflared
+        state: present
+
+- name: Install cloudflared (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Add cloudflared GPG key
+      ansible.builtin.apt_key:
+        url: https://pkg.cloudflare.com/cloudflare-main.gpg
+        state: present
+
+    - name: Add cloudflared repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install cloudflared (Ubuntu)
+      ansible.builtin.apt:
+        name: cloudflared
+        state: present
+        update_cache: true
+
 - name: Configure firewall (RedHat)
   when: ansible_os_family == "RedHat"
   block:
@@ -60,20 +105,6 @@
         state: enabled
       notify: reload firewall
 
-    - name: Allow HTTP through firewall
-      ansible.posix.firewalld:
-        service: http
-        permanent: true
-        state: enabled
-      notify: reload firewall
-
-    - name: Allow HTTPS through firewall
-      ansible.posix.firewalld:
-        service: https
-        permanent: true
-        state: enabled
-      notify: reload firewall
-
 - name: Configure firewall (Debian)
   when: ansible_os_family == "Debian"
   block:
@@ -81,18 +112,6 @@
       community.general.ufw:
         rule: allow
         name: OpenSSH
-
-    - name: Allow HTTP through UFW
-      community.general.ufw:
-        rule: allow
-        port: "80"
-        proto: tcp
-
-    - name: Allow HTTPS through UFW
-      community.general.ufw:
-        rule: allow
-        port: "443"
-        proto: tcp
 
     - name: Enable UFW
       community.general.ufw:
