@@ -21,6 +21,25 @@
     state: present
   when: ansible_os_family == "Debian"
 
+- name: Install Claude Code CLI
+  ansible.builtin.shell: |
+    curl -fsSL https://claude.ai/install.sh | bash
+  args:
+    creates: /usr/local/bin/claude
+  become_user: "{{ username }}"
+
+- name: Install OpenClaw CLI
+  community.general.npm:
+    name: openclaw
+    global: true
+    state: latest
+
+- name: Install OpenAI Codex CLI
+  community.general.npm:
+    name: "@openai/codex"
+    global: true
+    state: latest
+
 - name: Create dev workspace directories
   ansible.builtin.file:
     path: "/home/{{ username }}/{{ item }}"
@@ -35,6 +54,14 @@
 - name: Create code-server data directory
   ansible.builtin.file:
     path: /opt/services/code-server
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+
+- name: Create OpenClaw data directory
+  ansible.builtin.file:
+    path: /opt/services/openclaw
     state: directory
     owner: "1000"
     group: "1000"

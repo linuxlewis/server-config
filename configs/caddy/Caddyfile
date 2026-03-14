@@ -5,3 +5,8 @@ dev.home {
 	reverse_proxy code-server:8080
 	tls internal
 }
+
+claw.home {
+	reverse_proxy openclaw:18789
+	tls internal
+}

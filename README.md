@@ -76,15 +76,24 @@ cd ../docker && docker compose up -d
 | Service | URL | Description |
 |---------|-----|-------------|
 | code-server | `dev.home` | VS Code in the browser |
+| OpenClaw | `claw.home` | AI assistant gateway |
 | PostgreSQL | internal | Database |
 | Redis | internal | Cache |
 | Caddy | ports 80/443 | Reverse proxy with auto TLS |
+
+## AI CLI Tools
+
+Installed globally on the host via Ansible:
+
+- **Claude Code** — Anthropic's coding CLI (`claude`)
+- **OpenClaw** — AI assistant framework (`openclaw`)
+- **Codex CLI** — OpenAI's coding agent (`codex`)
 
 ## Ansible Roles
 
 - **base** - System packages, user setup, SSH hardening, fail2ban, directory structure
 - **docker** - Docker CE and Compose plugin installation
-- **dev** - Development tools (Python, Node.js, build tools)
+- **dev** - Development tools (Python, Node.js, build tools, Claude Code, OpenClaw, Codex CLI)
 - **networking** - Tailscale VPN, firewall rules (firewalld/ufw)
 
 ## Backups
