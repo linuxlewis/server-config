@@ -129,8 +129,5 @@
     - "{{ docker_data_dir }}"
     - "{{ docker_data_dir }}/postgres"
     - "{{ docker_data_dir }}/redis"
-    - "{{ docker_data_dir }}/caddy"
     - "{{ docker_data_dir }}/code-server"
-    - "{{ docker_data_dir }}/n8n"
-    - "{{ docker_data_dir }}/open-webui"
     - /opt/backups

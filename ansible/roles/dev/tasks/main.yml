@@ -113,11 +113,4 @@
     - projects
     - .config
 
-- name: Create code-server data directory
-  ansible.builtin.file:
-    path: /opt/services/code-server
-    state: directory
-    owner: "1000"
-    group: "1000"
-    mode: "0755"
 
