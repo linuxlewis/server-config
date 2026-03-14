@@ -1,0 +1,15 @@
+---
+- name: Configure dev server
+  hosts: servers
+  become: true
+
+  vars:
+    username: dev
+    docker_data_dir: /opt/services
+    tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
+
+  roles:
+    - base
+    - docker
+    - dev
+    - networking

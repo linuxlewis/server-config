@@ -1,0 +1,93 @@
+---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update all packages
+  ansible.builtin.package:
+    name: "*"
+    state: latest
+  when: ansible_os_family == "RedHat"
+
+- name: Update all packages (Debian)
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install base packages (RedHat)
+  ansible.builtin.dnf:
+    name:
+      - git
+      - tmux
+      - htop
+      - curl
+      - wget
+      - vim
+      - jq
+      - unzip
+      - fail2ban
+      - firewalld
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install base packages (Debian)
+  ansible.builtin.apt:
+    name:
+      - git
+      - tmux
+      - htop
+      - curl
+      - wget
+      - vim
+      - jq
+      - unzip
+      - fail2ban
+      - ufw
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create dev user
+  ansible.builtin.user:
+    name: "{{ username }}"
+    shell: /bin/bash
+    groups: docker,sudo
+    append: true
+    create_home: true
+
+- name: Configure SSH - disable password auth
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PasswordAuthentication"
+    line: "PasswordAuthentication no"
+  notify: restart sshd
+
+- name: Configure SSH - disable root login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin no"
+  notify: restart sshd
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+- name: Create persistent data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - "{{ docker_data_dir }}"
+    - "{{ docker_data_dir }}/postgres"
+    - "{{ docker_data_dir }}/redis"
+    - "{{ docker_data_dir }}/caddy"
+    - "{{ docker_data_dir }}/code-server"
+    - "{{ docker_data_dir }}/n8n"
+    - "{{ docker_data_dir }}/open-webui"
+    - /opt/backups
