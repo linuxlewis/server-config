@@ -69,6 +69,13 @@
     update_cache: true
   when: ansible_os_family == "Debian"
 
+- name: Install uv (Python package manager)
+  ansible.builtin.shell: |
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  args:
+    creates: /home/{{ username }}/.local/bin/uv
+  become_user: "{{ username }}"
+
 - name: Install Claude Code CLI
   ansible.builtin.shell: |
     curl -fsSL https://claude.ai/install.sh | bash
