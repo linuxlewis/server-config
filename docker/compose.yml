@@ -28,17 +28,6 @@ services:
     networks:
       - proxy
 
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:8080"
-    volumes:
-      - /opt/services/open-webui:/app/backend/data
-    networks:
-      - proxy
-
   postgres:
     image: postgres:16-alpine
     container_name: postgres

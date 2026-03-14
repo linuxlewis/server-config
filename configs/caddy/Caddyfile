@@ -1,6 +1,6 @@
 # Caddy reverse proxy configuration
 # Used for public-facing apps exposed via Cloudflare Tunnel
-# Private services (code-server, open-webui) are served via Tailscale Serve
+# Private services (code-server) are served via Tailscale Serve
 
 # Example: public app behind Cloudflare Tunnel
 # app.example.com {

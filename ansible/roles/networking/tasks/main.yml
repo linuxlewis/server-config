@@ -49,11 +49,6 @@
     cmd: tailscale serve --bg --https=443 http://localhost:8080
   changed_when: false
 
-- name: Configure Tailscale Serve for OpenClaw gateway
-  ansible.builtin.command:
-    cmd: tailscale serve --bg --https=8443 http://localhost:3000
-  changed_when: false
-
 - name: Install cloudflared (RedHat)
   when: ansible_os_family == "RedHat"
   block:
