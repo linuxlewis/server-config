@@ -4,7 +4,9 @@
     name:
       - python3
       - python3-pip
+      - python3-venv
       - nodejs
+      - golang
       - gcc
       - make
       - tmux
@@ -16,11 +18,55 @@
     name:
       - python3
       - python3-pip
+      - python3-venv
       - nodejs
       - npm
+      - golang
       - build-essential
       - tmux
     state: present
+  when: ansible_os_family == "Debian"
+
+# Google Chrome
+- name: Add Google Chrome repo key (RedHat)
+  ansible.builtin.rpm_key:
+    key: https://dl.google.com/linux/linux_signing_key.pub
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Add Google Chrome repo (RedHat)
+  ansible.builtin.yum_repository:
+    name: google-chrome
+    description: Google Chrome
+    baseurl: https://dl.google.com/linux/chrome/rpm/stable/x86_64
+    gpgcheck: true
+    gpgkey: https://dl.google.com/linux/linux_signing_key.pub
+  when: ansible_os_family == "RedHat"
+
+- name: Install Google Chrome (RedHat)
+  ansible.builtin.dnf:
+    name: google-chrome-stable
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Add Google Chrome repo key (Debian)
+  ansible.builtin.apt_key:
+    url: https://dl.google.com/linux/linux_signing_key.pub
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Google Chrome repo (Debian)
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main"
+    state: present
+    filename: google-chrome
+  when: ansible_os_family == "Debian"
+
+- name: Install Google Chrome (Debian)
+  ansible.builtin.apt:
+    name: google-chrome-stable
+    state: present
+    update_cache: true
   when: ansible_os_family == "Debian"
 
 - name: Install Claude Code CLI
