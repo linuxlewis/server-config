@@ -32,13 +32,6 @@
     append: true
     create_home: true
 
-- name: Add primary user to docker group
-  ansible.builtin.user:
-    name: "{{ username }}"
-    groups: docker
-    append: true
-  when: not ci_mode
-
 - name: Configure SSH
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
