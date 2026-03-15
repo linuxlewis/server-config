@@ -49,8 +49,20 @@
 - name: Install Node.js LTS
   ansible.builtin.apt:
     name: nodejs
-    state: present
+    state: latest
     update_cache: true
+
+- name: Check installed Node.js version
+  ansible.builtin.command: node --version
+  register: node_version
+  changed_when: false
+
+- name: Require Node.js 22.12 or newer
+  ansible.builtin.assert:
+    that:
+      - "node_version.stdout is version('22.12.0', '>=')"
+    fail_msg: "Node.js 22.12.0+ is required, found {{ node_version.stdout }}"
+    success_msg: "Node.js version is {{ node_version.stdout }}"
 
 - name: Install or update uv (Python package manager)
   ansible.builtin.shell: |
