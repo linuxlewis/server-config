@@ -110,8 +110,7 @@ install_dependencies() {
         ansible \
         python3-pip \
         curl \
-        wget \
-        software-properties-common
+        wget
 }
 
 clone_repo() {
