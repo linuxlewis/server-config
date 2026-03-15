@@ -27,6 +27,7 @@ log() { echo "[bootstrap] $*"; }
 
 detect_os() {
     if [ -f /etc/os-release ]; then
+        # shellcheck disable=SC1091
         . /etc/os-release
         echo "$ID"
     else
@@ -77,10 +78,10 @@ clone_repo() {
 }
 
 run_ansible() {
-    if [ "$SKIP_ANSIBLE" = "1" ]; then
+    [ "$SKIP_ANSIBLE" = "1" ] && {
         log "Skipping Ansible playbook (--skip-ansible enabled)"
         return
-    fi
+    }
 
     log "Running Ansible playbook..."
     cd "$INSTALL_DIR/ansible"
@@ -88,10 +89,10 @@ run_ansible() {
 }
 
 start_services() {
-    if [ "$SKIP_SERVICES" = "1" ]; then
+    [ "$SKIP_SERVICES" = "1" ] && {
         log "Skipping Docker Compose startup (--skip-services enabled)"
         return
-    fi
+    }
 
     log "Starting Docker Compose stack..."
     cd "$INSTALL_DIR/docker"
