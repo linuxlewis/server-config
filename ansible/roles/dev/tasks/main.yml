@@ -1,19 +1,5 @@
 ---
-- name: Install development packages (RedHat)
-  ansible.builtin.dnf:
-    name:
-      - python3
-      - python3-pip
-      - python3-venv
-      - nodejs
-      - golang
-      - gcc
-      - make
-      - tmux
-    state: present
-  when: ansible_os_family == "RedHat"
-
-- name: Install development packages (Debian)
+- name: Install Debian development toolchain packages
   ansible.builtin.apt:
     name:
       - python3
@@ -25,49 +11,23 @@
       - build-essential
       - tmux
     state: present
-  when: ansible_os_family == "Debian"
 
-# Google Chrome
-- name: Add Google Chrome repo key (RedHat)
-  ansible.builtin.rpm_key:
-    key: https://dl.google.com/linux/linux_signing_key.pub
-    state: present
-  when: ansible_os_family == "RedHat"
-
-- name: Add Google Chrome repo (RedHat)
-  ansible.builtin.yum_repository:
-    name: google-chrome
-    description: Google Chrome
-    baseurl: https://dl.google.com/linux/chrome/rpm/stable/x86_64
-    gpgcheck: true
-    gpgkey: https://dl.google.com/linux/linux_signing_key.pub
-  when: ansible_os_family == "RedHat"
-
-- name: Install Google Chrome (RedHat)
-  ansible.builtin.dnf:
-    name: google-chrome-stable
-    state: present
-  when: ansible_os_family == "RedHat"
-
-- name: Add Google Chrome repo key (Debian)
+- name: Add Google Chrome repo key
   ansible.builtin.apt_key:
     url: https://dl.google.com/linux/linux_signing_key.pub
     state: present
-  when: ansible_os_family == "Debian"
 
-- name: Add Google Chrome repo (Debian)
+- name: Add Google Chrome repo
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main"
     state: present
     filename: google-chrome
-  when: ansible_os_family == "Debian"
 
-- name: Install Google Chrome (Debian)
+- name: Install Google Chrome
   ansible.builtin.apt:
     name: google-chrome-stable
     state: present
     update_cache: true
-  when: ansible_os_family == "Debian"
 
 - name: Install or update uv (Python package manager)
   ansible.builtin.shell: |
@@ -83,11 +43,15 @@
   register: claude_install
   changed_when: "'already installed' not in claude_install.stderr"
 
-- name: Install OpenClaw CLI
+- name: Install global Node.js CLI tools
   community.general.npm:
-    name: openclaw
+    name: "{{ item }}"
     global: true
     state: latest
+  loop:
+    - openclaw
+    - "@openai/codex"
+    - "@bitwarden/cli"
 
 - name: Install OpenClaw gateway daemon with Tailscale Serve
   ansible.builtin.command:
@@ -95,18 +59,6 @@
   args:
     creates: /etc/systemd/system/openclaw-gateway.service
   become_user: "{{ username }}"
-
-- name: Install OpenAI Codex CLI
-  community.general.npm:
-    name: "@openai/codex"
-    global: true
-    state: latest
-
-- name: Install Bitwarden CLI
-  community.general.npm:
-    name: "@bitwarden/cli"
-    global: true
-    state: latest
 
 - name: Create dev workspace directories
   ansible.builtin.file:
@@ -118,5 +70,3 @@
   loop:
     - projects
     - .config
-
-

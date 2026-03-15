@@ -30,14 +30,4 @@ restic restore "$SNAPSHOT" --target "$RESTORE_TARGET"
 log "Starting Docker services..."
 cd /opt/server-config/docker && docker compose up -d
 
-# Wait for postgres to be ready
-log "Waiting for PostgreSQL..."
-sleep 10
-
-# Restore database
-if [ -f /opt/backups/postgres_dump.sql ]; then
-    log "Restoring PostgreSQL databases..."
-    docker exec -i postgres psql -U "${POSTGRES_USER:-dev}" < /opt/backups/postgres_dump.sql
-fi
-
 log "Restore complete!"

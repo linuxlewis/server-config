@@ -1,44 +1,23 @@
 ---
-- name: Install Docker (RedHat)
-  when: ansible_os_family == "RedHat"
-  block:
-    - name: Add Docker repo (Fedora)
-      ansible.builtin.command:
-        cmd: dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-      args:
-        creates: /etc/yum.repos.d/docker-ce.repo
+- name: Add Docker GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
 
-    - name: Install Docker packages (Fedora)
-      ansible.builtin.dnf:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-compose-plugin
-        state: present
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
 
-- name: Install Docker (Debian)
-  when: ansible_os_family == "Debian"
-  block:
-    - name: Add Docker GPG key
-      ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    - name: Add Docker repository
-      ansible.builtin.apt_repository:
-        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-        state: present
-
-    - name: Install Docker packages (Ubuntu)
-      ansible.builtin.apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-compose-plugin
-        state: present
-        update_cache: true
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: true
 
 - name: Add user to docker group
   ansible.builtin.user:

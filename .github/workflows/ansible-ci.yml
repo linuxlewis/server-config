@@ -1,0 +1,97 @@
+name: Infrastructure CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-ansible:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install Ansible dependencies
+        run: |
+          python -m pip install --upgrade pip ansible-core ansible-lint
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Ansible syntax check
+        working-directory: ansible
+        run: ansible-playbook -i inventory.ini server.yml --syntax-check
+
+      - name: Ansible lint (minimum profile)
+        run: ansible-lint --profile=min ansible/server.yml
+
+  validate-bootstrap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install bootstrap lint dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Bootstrap script syntax check
+        run: bash -n bootstrap/bootstrap.sh
+
+      - name: Bootstrap script lint
+        run: shellcheck bootstrap/bootstrap.sh
+
+      - name: Bootstrap script argument parsing test
+        run: |
+          if output=$(bash bootstrap/bootstrap.sh --not-a-real-flag 2>&1); then
+            echo "Expected bootstrap script to fail on an unknown option, but it succeeded"
+            exit 1
+          fi
+
+          echo "$output" | grep -q "Unknown option: --not-a-real-flag"
+
+  bootstrap-integration-debian:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run bootstrap end-to-end in Debian container
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace/server-config \
+            -w /workspace/server-config \
+            debian:12 \
+            bash -lc '
+              set -euo pipefail
+
+              apt-get update
+              apt-get install -y git
+
+              cp -a /workspace/server-config /tmp/server-config-source
+              rm -rf /tmp/server-config-source/.git
+              git init /tmp/server-config-source
+              git config --global --add safe.directory /tmp/server-config-source
+              git -C /tmp/server-config-source checkout -b main
+              git -C /tmp/server-config-source add .
+              git -C /tmp/server-config-source \
+                -c user.name=ci \
+                -c user.email=ci@example.com \
+                commit -m "bootstrap test source"
+
+              ANSIBLE_EXTRA_VARS=ci_mode=true \
+              bash /workspace/server-config/bootstrap/bootstrap.sh \
+                --repo-url /tmp/server-config-source \
+                --branch main \
+                --dir /tmp/server-config-install \
+                --skip-services
+            '
