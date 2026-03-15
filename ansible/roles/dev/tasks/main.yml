@@ -60,7 +60,7 @@
     creates: /etc/systemd/system/openclaw-gateway.service
   become_user: "{{ username }}"
 
-- name: Create dev workspace directories
+- name: Create user workspace directories
   ansible.builtin.file:
     path: "/home/{{ username }}/{{ item }}"
     state: directory
@@ -68,5 +68,5 @@
     group: "{{ username }}"
     mode: "0755"
   loop:
-    - projects
+    - workspace
     - .config

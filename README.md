@@ -1,174 +1,237 @@
 # Reproducible Debian Dev Server
 
-A fully reproducible Debian server where configuration lives in Git, services run in Docker, and a fresh machine can be rebuilt in ~10 minutes.
-
-## Architecture
-
-```
-Server
-├── Debian Server
-├── Bootstrap Script → pulls this repo
-├── Ansible → configures system
-├── Docker → runs all services
-└── Backups → persistent data only
-```
-
-**Key principle:** The machine is disposable. Configuration lives in Git.
+A reproducible Debian dev server where system configuration lives in Git, host setup is managed with Ansible, and services run with Docker Compose.
 
 ## Quick Start
 
-### Fresh Install
+### Bootstrap a fresh Debian server
+
+Run this as `root` on the target server:
 
 ```bash
-# 1. Install Debian
-
-# 2. Run bootstrap as root
-curl -fsSL <your-repo-url>/bootstrap/bootstrap.sh | \
-  REPO_URL=https://github.com/YOUR_USER/server-config.git bash
+curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
 ```
 
-### Manual Setup
+This will:
+
+- install bootstrap dependencies
+- prompt for the Linux username
+- prompt for the `code-server` password
+- optionally prompt for a Tailscale auth key
+- clone the repo into `/opt/server-config`
+- write `/opt/server-config/docker/.env`
+- run `ansible/server.yml`
+- start the Docker Compose stack
+
+For unattended installs, set the variables up front:
 
 ```bash
-git clone https://github.com/YOUR_USER/server-config.git /opt/server-config
+export REPO_URL="https://github.com/linuxlewis/server-config.git"
+export SERVER_USERNAME="dev"
+export CODE_SERVER_PASSWORD="replace-this-password"
+export TAILSCALE_AUTHKEY="tskey-auth-..."
+curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
+```
+
+### Manual setup
+
+Use this when you want the steps broken out explicitly:
+
+```bash
+sudo -i
+git clone https://github.com/linuxlewis/server-config.git /opt/server-config
 cd /opt/server-config
 
-# Configure environment
 cp docker/.env.example docker/.env
-# Edit docker/.env with your values
+${EDITOR:-vi} docker/.env
 
-# Set Tailscale auth key (optional)
+export SERVER_USERNAME="dev"
+
+cd ansible
+ansible-playbook -i inventory.ini server.yml --diff
+
+cd /opt/server-config/docker
+docker compose up -d
+docker compose ps
+```
+
+### Optional Tailscale auto-join
+
+Set the auth key before running Ansible:
+
+```bash
 export TAILSCALE_AUTHKEY="tskey-auth-..."
-
-# Run Ansible
-cd ansible && ansible-playbook -i inventory.ini server.yml
-
-# Start services
-cd ../docker && docker compose up -d
+export SERVER_USERNAME="dev"
+cd /opt/server-config/ansible
+ansible-playbook -i inventory.ini server.yml --diff
 ```
 
-The playbook is applied manually. This repo no longer installs any cron job or systemd timer to re-run itself automatically.
+## Common Commands
 
-## Repository Structure
-
-```
-├── bootstrap/          # Bootstrap script for fresh installs
-│   └── bootstrap.sh
-├── ansible/            # System configuration
-│   ├── inventory.ini
-│   ├── server.yml
-│   └── roles/
-│       ├── base/       # Users, SSH, packages, fail2ban
-│       ├── docker/     # Docker CE installation
-│       ├── dev/        # Development tools
-│       └── networking/ # Tailscale, firewall
-├── docker/             # Application services
-│   ├── compose.yml
-│   └── .env.example
-├── configs/            # Service configuration files
-│   ├── caddy/          # Reverse proxy config
-│   └── system/         # Sysctl tuning
-└── scripts/            # Operational scripts
-    ├── backup.sh
-    └── restore.sh
-```
-
-## Services
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| code-server | `dev.home` | VS Code in the browser |
-| Caddy | ports 80/443 | Reverse proxy with auto TLS |
-
-
-## CI
-
-GitHub Actions validates infrastructure changes on pull requests and pushes to `main`:
-
-- `ansible-playbook --syntax-check` against `ansible/server.yml`
-- `ansible-lint --profile=min ansible/server.yml`
-- `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
-- An argument-parsing test that verifies bootstrap rejects unknown flags
-- A Debian Docker integration test that runs bootstrap through the Ansible step in CI mode (`ANSIBLE_EXTRA_VARS=ci_mode=true`) and skips Docker service startup
-
-## AI CLI Tools
-
-Installed globally on the host via Ansible:
-
-- **Claude Code** — Anthropic's coding CLI (`claude`)
-- **OpenClaw** — AI assistant framework (`openclaw`)
-- **Codex CLI** — OpenAI's coding agent (`codex`)
-
-## Ansible Roles
-
-- **base** - System packages, user setup, SSH hardening, fail2ban, directory structure
-- **docker** - Docker CE and Compose plugin installation
-- **dev** - Development tools (Python, Node.js, build tools, Claude Code, OpenClaw, Codex CLI)
-- **networking** - Tailscale VPN, cloudflared, and Debian UFW rules
-
-## Backups
-
-Uses [restic](https://restic.net/) for encrypted, deduplicated backups.
+### Re-apply server configuration
 
 ```bash
-# Set backup target
-export RESTIC_REPOSITORY=/mnt/backup   # or s3:bucket/path
-export RESTIC_PASSWORD=your-password
-
-# Run backup
-./scripts/backup.sh
-
-# Restore from latest
-./scripts/restore.sh
-
-# Restore specific snapshot
-./scripts/restore.sh <snapshot-id>
+cd /opt/server-config/ansible
+export SERVER_USERNAME="dev"
+ansible-playbook -i inventory.ini server.yml --diff
 ```
 
-**What gets backed up:**
-- `/home` - User data
-- `/opt/services` - Docker persistent volumes
-
-Database backups are no longer part of the generic stack. Any app-specific data services should be backed up by the stack that owns them.
-
-**Retention:** 7 daily, 4 weekly, 6 monthly snapshots.
-
-## Recovery
-
-If hardware fails:
-
-1. Install Debian
-2. Run bootstrap script
-3. Restore backups
+### Validate the Ansible playbook
 
 ```bash
-# On fresh machine
-./bootstrap/bootstrap.sh
+cd /opt/server-config/ansible
+ansible-playbook -i inventory.ini server.yml --syntax-check
+```
 
-# Restore data
-export RESTIC_REPOSITORY=/mnt/backup
-export RESTIC_PASSWORD=your-password
-./scripts/restore.sh
+### Restart the application stack
+
+```bash
+cd /opt/server-config/docker
+docker compose up -d
+docker compose ps
+```
+
+### Stop the application stack
+
+```bash
+cd /opt/server-config/docker
+docker compose down
+```
+
+### Update the repo on the server
+
+```bash
+cd /opt/server-config
+git pull origin main
+
+cd /opt/server-config/ansible
+export SERVER_USERNAME="dev"
+ansible-playbook -i inventory.ini server.yml --diff
+
+cd /opt/server-config/docker
+docker compose up -d
 ```
 
 ## Configuration
 
-### Environment Variables
+### Environment file
 
-Copy `docker/.env.example` to `docker/.env` and set:
+Create the Docker environment file:
+
+```bash
+cd /opt/server-config
+cp docker/.env.example docker/.env
+${EDITOR:-vi} docker/.env
+```
+
+Current variables:
 
 | Variable | Description |
 |----------|-------------|
-| `CODE_SERVER_PASSWORD` | VS Code server password (default: `changeme`) |
+| `SERVER_USERNAME` | Linux username Ansible creates and Docker uses for the workspace mount |
+| `CODE_SERVER_PASSWORD` | Password for `code-server` |
 
-### Tailscale
+Example:
 
-Set `TAILSCALE_AUTHKEY` environment variable before running Ansible to auto-join your Tailscale network.
-
-## Future: Cluster Migration
-
-The container-first design enables easy migration to Kubernetes:
-
+```bash
+cat > /opt/server-config/docker/.env <<'EOF'
+SERVER_USERNAME=dev
+CODE_SERVER_PASSWORD=replace-this-password
+EOF
 ```
-single node → add nodes → install k3s → convert to K8s manifests
+
+## Services
+
+| Service | Access | Description |
+|---------|--------|-------------|
+| `code-server` | `http://SERVER_IP:8080` through local port binding or via Caddy | VS Code in the browser |
+| `caddy` | ports `80` and `443` | Reverse proxy and TLS termination |
+
+## Repository Structure
+
+```text
+.
+├── ansible/
+│   ├── inventory.ini
+│   ├── requirements.yml
+│   ├── server.yml
+│   └── roles/
+├── bootstrap/
+│   └── bootstrap.sh
+├── configs/
+│   ├── caddy/
+│   └── system/
+├── docker/
+│   ├── compose.yml
+│   └── .env.example
+└── scripts/
+    ├── backup.sh
+    └── restore.sh
 ```
+
+## Ansible Roles
+
+- `base`: packages, user setup, SSH hardening, fail2ban, directories
+- `docker`: Docker CE and Compose plugin installation
+- `dev`: development tooling
+- `networking`: Tailscale, cloudflared, firewall rules
+
+## Backups
+
+Backups use `restic` and include `/home` and `/opt/services`.
+
+### Run a backup
+
+```bash
+export RESTIC_REPOSITORY="/mnt/backup"
+export RESTIC_PASSWORD="replace-this-password"
+cd /opt/server-config
+./scripts/backup.sh
+```
+
+### Restore the latest backup
+
+```bash
+export RESTIC_REPOSITORY="/mnt/backup"
+export RESTIC_PASSWORD="replace-this-password"
+cd /opt/server-config
+./scripts/restore.sh
+```
+
+### Restore a specific snapshot
+
+```bash
+export RESTIC_REPOSITORY="/mnt/backup"
+export RESTIC_PASSWORD="replace-this-password"
+cd /opt/server-config
+./scripts/restore.sh <snapshot-id>
+```
+
+Retention policy:
+
+- 7 daily snapshots
+- 4 weekly snapshots
+- 6 monthly snapshots
+
+## Recovery
+
+On a replacement Debian machine:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
+
+export RESTIC_REPOSITORY="/mnt/backup"
+export RESTIC_PASSWORD="replace-this-password"
+cd /opt/server-config
+./scripts/restore.sh
+```
+
+## CI
+
+CI validates infrastructure changes with:
+
+- `ansible-playbook --syntax-check` for `ansible/server.yml`
+- `ansible-lint --profile=min ansible/server.yml`
+- `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
+- bootstrap argument parsing checks
+- a Debian integration run of bootstrap in CI mode

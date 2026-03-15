@@ -24,7 +24,7 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - /opt/services/code-server:/home/coder/.local/share/code-server
-      - /home/dev/projects:/home/coder/projects
+      - /home/${SERVER_USERNAME:-dev}/workspace:/home/coder/workspace
     networks:
       - proxy
 
