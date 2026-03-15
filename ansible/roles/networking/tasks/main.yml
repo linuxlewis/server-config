@@ -12,16 +12,19 @@
   loop:
     - url: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
       dest: /etc/apt/keyrings/tailscale.gpg
-    - url: https://pkg.cloudflare.com/cloudflare-main.gpg
-      dest: /etc/apt/keyrings/cloudflare-main.gpg
+    - url: https://pkg.cloudflare.com/cloudflare-public-v2.gpg
+      dest: /etc/apt/keyrings/cloudflare-public-v2.gpg
 
 - name: Add package repositories
-  ansible.builtin.apt_repository:
-    repo: "{{ item }}"
-    state: present
+  ansible.builtin.copy:
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    content: "{{ item.repo }}\n"
   loop:
-    - "deb [signed-by=/etc/apt/keyrings/tailscale.gpg] https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
-    - "deb [signed-by=/etc/apt/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
+    - dest: /etc/apt/sources.list.d/tailscale.list
+      repo: "deb [signed-by=/etc/apt/keyrings/tailscale.gpg] https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+    - dest: /etc/apt/sources.list.d/cloudflared.list
+      repo: "deb [signed-by=/etc/apt/keyrings/cloudflare-public-v2.gpg] https://pkg.cloudflare.com/cloudflared any main"
 
 - name: Install networking packages
   ansible.builtin.apt:

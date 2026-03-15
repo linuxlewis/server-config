@@ -29,10 +29,11 @@
     mode: "0644"
 
 - name: Add Google Chrome repo
-  ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main"
-    state: present
-    filename: google-chrome
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/google-chrome.list
+    mode: "0644"
+    content: |
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main
 
 - name: Add NodeSource repo
   ansible.builtin.apt_repository:
