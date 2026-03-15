@@ -80,6 +80,17 @@ cd ../docker && docker compose up -d
 | Redis | internal | Cache |
 | Caddy | ports 80/443 | Reverse proxy with auto TLS |
 
+
+## CI
+
+GitHub Actions validates infrastructure changes on pull requests and pushes to `main`:
+
+- `ansible-playbook --syntax-check` against `ansible/server.yml`
+- `ansible-lint --profile=min ansible/server.yml`
+- `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
+- An argument-parsing test that verifies bootstrap rejects unknown flags
+- A Debian Docker integration test that runs bootstrap through the Ansible step in CI mode (`ANSIBLE_EXTRA_VARS=ci_mode=true`) and skips Docker service startup
+
 ## AI CLI Tools
 
 Installed globally on the host via Ansible:
