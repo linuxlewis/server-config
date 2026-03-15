@@ -40,21 +40,29 @@ Optional environment variables:
 
 ## Bootstrap A Fresh Server
 
-Run the bootstrap script as `root`. It installs dependencies, clones the repo into `/opt/server-config`, runs Ansible, and starts the Docker stack.
+Run the bootstrap flow as `root`. It installs dependencies, clones the repo into `/opt/server-config`, runs Ansible, and starts the Docker stack.
 
 `postgres` requires `POSTGRES_PASSWORD`. Set it before bootstrap or `docker compose up -d` will fail.
 
+Fresh machine, one-shot bootstrap:
+
 ```bash
+sudo -i
 export POSTGRES_PASSWORD='replace-this'
 export CODE_SERVER_PASSWORD='replace-this-too'
-curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | \
-  REPO_URL=https://github.com/linuxlewis/server-config.git bash
+export REPO_URL='https://github.com/linuxlewis/server-config.git'
+export REPO_BRANCH='main'
+curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
 ```
 
-Useful overrides:
+Bootstrap from an already-cloned repo:
 
 ```bash
-REPO_BRANCH=main INSTALL_DIR=/opt/server-config bash bootstrap/bootstrap.sh
+sudo -i
+cd /opt/server-config
+export POSTGRES_PASSWORD='replace-this'
+export CODE_SERVER_PASSWORD='replace-this-too'
+bash bootstrap/bootstrap.sh --repo-url https://github.com/linuxlewis/server-config.git --branch main --dir /opt/server-config
 ```
 
 ## Persist Runtime Configuration
@@ -64,6 +72,7 @@ After bootstrap, create `docker/.env` so future Compose runs do not depend on wh
 ```bash
 cd /opt/server-config
 cp docker/.env.example docker/.env
+${EDITOR:-vi} docker/.env
 ```
 
 Set at least:
@@ -82,16 +91,32 @@ Most changes follow this loop:
 3. Re-run Docker Compose from `docker/` if service definitions changed.
 4. Verify the affected service.
 
-Common commands:
+Update the machine from the checked-out repo:
+
+```bash
+cd /opt/server-config
+git pull --ff-only
+cd ansible
+ansible-playbook -i inventory.ini server.yml --diff
+cd ../docker
+docker compose up -d
+docker compose ps
+docker compose logs -f caddy
+```
+
+If you only changed Ansible:
 
 ```bash
 cd /opt/server-config/ansible
 ansible-playbook -i inventory.ini server.yml --diff
+```
 
+If you only changed Docker Compose or container config:
+
+```bash
 cd /opt/server-config/docker
 docker compose up -d
 docker compose ps
-docker compose logs -f caddy
 ```
 
 If you want Tailscale configured during an Ansible run:
@@ -125,14 +150,14 @@ The Docker stack currently includes:
 These checks are lightweight, but they catch most syntax and templating mistakes before you touch a real server:
 
 ```bash
-cd ansible
+cd /opt/server-config/ansible
 ansible-playbook -i inventory.ini server.yml --syntax-check
 ansible-playbook -i inventory.ini server.yml --check --diff
 
-cd ../docker
+cd /opt/server-config/docker
 docker compose --env-file .env.example config -q
 
-cd ..
+cd /opt/server-config
 bash -n bootstrap/bootstrap.sh scripts/backup.sh scripts/restore.sh
 ```
 
@@ -150,6 +175,7 @@ Set:
 Then run:
 
 ```bash
+cd /opt/server-config
 ./scripts/backup.sh
 ./scripts/restore.sh
 ./scripts/restore.sh <snapshot-id>
