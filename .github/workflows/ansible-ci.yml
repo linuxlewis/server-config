@@ -1,4 +1,4 @@
-name: Ansible CI
+name: Infrastructure CI
 
 on:
   pull_request:
@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Ansible dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ansible-core ansible-lint
@@ -30,3 +30,35 @@ jobs:
 
       - name: Ansible lint
         run: ansible-lint ansible/server.yml
+
+  validate-bootstrap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install bootstrap lint dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Bootstrap script syntax check
+        run: bash -n bootstrap/bootstrap.sh
+
+      - name: Bootstrap script lint
+        run: shellcheck bootstrap/bootstrap.sh
+
+      - name: Bootstrap script argument parsing test
+        run: |
+          set +e
+          output=$(bash bootstrap/bootstrap.sh --not-a-real-flag 2>&1)
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "Expected bootstrap script to fail on an unknown option, but it succeeded"
+            exit 1
+          fi
+
+          echo "$output" | grep -q "Unknown option: --not-a-real-flag"
