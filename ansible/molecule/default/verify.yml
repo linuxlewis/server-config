@@ -1,0 +1,49 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Gather passwd database
+      ansible.builtin.getent:
+        database: passwd
+
+    - name: Assert configured user exists
+      ansible.builtin.assert:
+        that:
+          - "'molecule' in ansible_facts.getent_passwd"
+
+    - name: Check configured user home directory
+      ansible.builtin.stat:
+        path: /home/molecule
+      register: user_home_dir
+
+    - name: Assert configured user home directory exists
+      ansible.builtin.assert:
+        that:
+          - user_home_dir.stat.exists
+          - user_home_dir.stat.isdir
+          - user_home_dir.stat.pw_name == 'molecule'
+
+    - name: Check docker data directory
+      ansible.builtin.stat:
+        path: /opt/services
+      register: docker_data_dir
+
+    - name: Assert docker data directory exists
+      ansible.builtin.assert:
+        that:
+          - docker_data_dir.stat.exists
+          - docker_data_dir.stat.isdir
+          - docker_data_dir.stat.pw_name == 'molecule'
+
+    - name: Check code-server data directory
+      ansible.builtin.stat:
+        path: /opt/services/code-server
+      register: code_server_dir
+
+    - name: Assert code-server data directory exists
+      ansible.builtin.assert:
+        that:
+          - code_server_dir.stat.exists
+          - code_server_dir.stat.isdir
+          - code_server_dir.stat.pw_name == 'molecule'

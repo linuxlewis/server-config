@@ -66,6 +66,20 @@ cd /opt/server-config/ansible
 ansible-playbook -i inventory.ini server.yml --diff
 ```
 
+### Optional firewall
+
+The playbook now leaves `ufw` disabled by default to avoid interfering with Tailscale access.
+
+If you want to enable it, run Ansible with:
+
+```bash
+cd /opt/server-config/ansible
+export SERVER_USERNAME="dev"
+ansible-playbook -i inventory.ini server.yml --diff --extra-vars enable_firewall=true
+```
+
+When enabled, the role allows both `OpenSSH` and inbound traffic on `tailscale0` before turning `ufw` on.
+
 ## Common Commands
 
 ### Re-apply server configuration
@@ -74,6 +88,18 @@ ansible-playbook -i inventory.ini server.yml --diff
 cd /opt/server-config/ansible
 export SERVER_USERNAME="dev"
 ansible-playbook -i inventory.ini server.yml --diff
+```
+
+### Run the Ansible test harness
+
+Install the local tooling with `uv`, then run linting and Molecule from repo root:
+
+```bash
+uv sync --group dev
+uv run ansible-galaxy collection install -r ansible/requirements.yml
+uv run ansible-playbook -i ansible/inventory.ini ansible/server.yml --syntax-check
+uv run ansible-lint --profile=min ansible/server.yml
+cd ansible && uv run molecule test
 ```
 
 ### Validate the Ansible playbook
@@ -232,6 +258,7 @@ CI validates infrastructure changes with:
 
 - `ansible-playbook --syntax-check` for `ansible/server.yml`
 - `ansible-lint --profile=min ansible/server.yml`
+- `molecule test` for the Ansible base-role harness
 - `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
 - bootstrap argument parsing checks
 - a Debian integration run of bootstrap in CI mode
