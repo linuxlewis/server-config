@@ -11,9 +11,6 @@
 
   roles:
     - base
-    - role: docker
-      when: not ci_mode
-    - role: dev
-      when: not ci_mode
-    - role: networking
-      when: not ci_mode
+    - docker
+    - dev
+    - networking

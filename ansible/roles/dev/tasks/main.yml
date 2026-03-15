@@ -53,21 +53,27 @@
   ansible.builtin.apt_key:
     url: https://dl.google.com/linux/linux_signing_key.pub
     state: present
-  when: ansible_os_family == "Debian"
+  when:
+    - ansible_os_family == "Debian"
+    - not ci_mode
 
 - name: Add Google Chrome repo (Debian)
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main"
     state: present
     filename: google-chrome
-  when: ansible_os_family == "Debian"
+  when:
+    - ansible_os_family == "Debian"
+    - not ci_mode
 
 - name: Install Google Chrome (Debian)
   ansible.builtin.apt:
     name: google-chrome-stable
     state: present
     update_cache: true
-  when: ansible_os_family == "Debian"
+  when:
+    - ansible_os_family == "Debian"
+    - not ci_mode
 
 - name: Install or update uv (Python package manager)
   ansible.builtin.shell: |
@@ -75,6 +81,7 @@
   become_user: "{{ username }}"
   register: uv_install
   changed_when: "'already installed' not in uv_install.stderr"
+  when: not ci_mode
 
 - name: Install or update Claude Code CLI
   ansible.builtin.shell: |
@@ -82,12 +89,14 @@
   become_user: "{{ username }}"
   register: claude_install
   changed_when: "'already installed' not in claude_install.stderr"
+  when: not ci_mode
 
 - name: Install OpenClaw CLI
   community.general.npm:
     name: openclaw
     global: true
     state: latest
+  when: not ci_mode
 
 - name: Install OpenClaw gateway daemon with Tailscale Serve
   ansible.builtin.command:
@@ -95,18 +104,21 @@
   args:
     creates: /etc/systemd/system/openclaw-gateway.service
   become_user: "{{ username }}"
+  when: not ci_mode
 
 - name: Install OpenAI Codex CLI
   community.general.npm:
     name: "@openai/codex"
     global: true
     state: latest
+  when: not ci_mode
 
 - name: Install Bitwarden CLI
   community.general.npm:
     name: "@bitwarden/cli"
     global: true
     state: latest
+  when: not ci_mode
 
 - name: Create dev workspace directories
   ansible.builtin.file:
@@ -118,5 +130,4 @@
   loop:
     - projects
     - .config
-
 

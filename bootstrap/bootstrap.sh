@@ -88,6 +88,10 @@ run_ansible() {
 
     log "Running Ansible playbook..."
     cd "$INSTALL_DIR/ansible"
+    if [ -f requirements.yml ]; then
+        log "Installing Ansible collections..."
+        ansible-galaxy collection install -r requirements.yml
+    fi
     ansible_cmd=(ansible-playbook -i inventory.ini server.yml --diff)
 
     if [ -n "$ANSIBLE_EXTRA_VARS" ]; then

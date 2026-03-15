@@ -22,12 +22,12 @@
   block:
     - name: Add Docker GPG key
       ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
+        url: "https://download.docker.com/linux/{{ 'debian' if ansible_distribution == 'Debian' else 'ubuntu' }}/gpg"
         state: present
 
     - name: Add Docker repository
       ansible.builtin.apt_repository:
-        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        repo: "deb https://download.docker.com/linux/{{ 'debian' if ansible_distribution == 'Debian' else 'ubuntu' }} {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Install Docker packages (Ubuntu)
@@ -51,6 +51,7 @@
     name: docker
     enabled: true
     state: started
+  when: not ci_mode
 
 - name: Configure Docker daemon
   ansible.builtin.copy:
@@ -66,3 +67,4 @@
       }
     mode: "0644"
   notify: restart docker
+  when: not ci_mode

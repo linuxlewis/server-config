@@ -18,12 +18,12 @@
   block:
     - name: Add Tailscale GPG key
       ansible.builtin.apt_key:
-        url: https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg
+        url: "https://pkgs.tailscale.com/stable/{{ 'debian' if ansible_distribution == 'Debian' else 'ubuntu' }}/{{ ansible_distribution_release }}.noarmor.gpg"
         state: present
 
     - name: Add Tailscale repository
       ansible.builtin.apt_repository:
-        repo: "deb https://pkgs.tailscale.com/stable/ubuntu {{ ansible_distribution_release }} main"
+        repo: "deb https://pkgs.tailscale.com/stable/{{ 'debian' if ansible_distribution == 'Debian' else 'ubuntu' }} {{ ansible_distribution_release }} main"
         state: present
 
     - name: Install Tailscale (Ubuntu)
@@ -37,17 +37,21 @@
     name: tailscaled
     enabled: true
     state: started
+  when: not ci_mode
 
 - name: Connect to Tailscale network
   ansible.builtin.command:
     cmd: "tailscale up --authkey={{ tailscale_authkey }}"
-  when: tailscale_authkey | length > 0
+  when:
+    - tailscale_authkey | length > 0
+    - not ci_mode
   changed_when: false
 
 - name: Configure Tailscale Serve for code-server
   ansible.builtin.command:
     cmd: tailscale serve --bg --https=443 http://localhost:8080
   changed_when: false
+  when: not ci_mode
 
 - name: Install cloudflared (RedHat)
   when: ansible_os_family == "RedHat"
@@ -66,7 +70,9 @@
         state: present
 
 - name: Install cloudflared (Debian)
-  when: ansible_os_family == "Debian"
+  when:
+    - ansible_os_family == "Debian"
+    - not ci_mode
   block:
     - name: Add cloudflared GPG key
       ansible.builtin.apt_key:
@@ -85,7 +91,9 @@
         update_cache: true
 
 - name: Configure firewall (RedHat)
-  when: ansible_os_family == "RedHat"
+  when:
+    - ansible_os_family == "RedHat"
+    - not ci_mode
   block:
     - name: Enable firewalld
       ansible.builtin.systemd:
@@ -101,7 +109,9 @@
       notify: reload firewall
 
 - name: Configure firewall (Debian)
-  when: ansible_os_family == "Debian"
+  when:
+    - ansible_os_family == "Debian"
+    - not ci_mode
   block:
     - name: Allow SSH through UFW
       community.general.ufw:
