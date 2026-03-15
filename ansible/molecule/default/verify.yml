@@ -24,6 +24,8 @@
       ansible.builtin.assert:
         that:
           - "'git' in ansible_facts.packages"
+          - "'gh' in ansible_facts.packages"
+          - "'tmux' in ansible_facts.packages"
           - "'curl' in ansible_facts.packages"
           - "'ufw' in ansible_facts.packages"
           - "'fail2ban' in ansible_facts.packages"

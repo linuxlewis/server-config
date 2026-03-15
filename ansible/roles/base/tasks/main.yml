@@ -12,6 +12,7 @@
   ansible.builtin.apt:
     name:
       - git
+      - gh
       - tmux
       - htop
       - curl
