@@ -17,7 +17,6 @@
     ci_mode: false
     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
     enable_firewall: false
-    disable_ssh_password_auth: false
 
   roles:
     - base

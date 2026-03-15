@@ -91,18 +91,6 @@ ansible-playbook -i inventory.ini server.yml --diff --extra-vars enable_firewall
 
 When enabled, the role allows both `OpenSSH` and inbound traffic on `tailscale0` before turning `ufw` on.
 
-### Optional SSH password hardening
-
-The playbook leaves SSH password authentication enabled by default so you can copy keys to the server first.
-
-After verifying key-based SSH works for your user, disable password auth with:
-
-```bash
-cd /opt/server-config/ansible
-export SERVER_USERNAME="dev"
-ansible-playbook -i inventory.ini server.yml --diff --extra-vars disable_ssh_password_auth=true
-```
-
 ## Common Commands
 
 ### Re-apply server configuration
