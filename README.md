@@ -55,6 +55,17 @@ docker compose up -d
 docker compose ps
 ```
 
+### User-managed npm CLI tools
+
+The `dev` role installs Node.js LTS and configures the primary user for per-user npm globals in `~/.npm-global`.
+Ansible does not install Node-based CLI tools anymore, so each user can manage their own versions without `sudo`.
+
+After logging in as that user, install tools with:
+
+```bash
+npm install -g @openai/codex @bitwarden/cli openclaw
+```
+
 ### Optional Tailscale auto-join
 
 Set the auth key before running Ansible:

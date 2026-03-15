@@ -78,22 +78,39 @@
   register: claude_install
   changed_when: "'already installed' not in claude_install.stderr"
 
-- name: Install global Node.js CLI tools
-  community.general.npm:
-    name: "{{ item }}"
-    global: true
-    state: latest
+- name: Create user npm prefix directories
+  ansible.builtin.file:
+    path: "/home/{{ username }}/{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
   loop:
-    - openclaw
-    - "@openai/codex"
-    - "@bitwarden/cli"
+    - .npm-global
+    - .npm-global/bin
 
-- name: Install OpenClaw gateway daemon with Tailscale Serve
-  ansible.builtin.command:
-    cmd: openclaw gateway install --tailscale serve
-  args:
-    creates: /etc/systemd/system/openclaw-gateway.service
-  become_user: "{{ username }}"
+- name: Configure user npm prefix and PATH
+  ansible.builtin.copy:
+    dest: "/home/{{ username }}/.npmrc"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0644"
+    content: |
+      prefix=${HOME}/.npm-global
+
+- name: Ensure user PATH includes npm global bin
+  ansible.builtin.blockinfile:
+    path: "/home/{{ username }}/.profile"
+    marker: "# {mark} ANSIBLE MANAGED NPM PATH"
+    create: true
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0644"
+    block: |
+      case ":$PATH:" in
+        *":$HOME/.npm-global/bin:"*) ;;
+        *) export PATH="$HOME/.npm-global/bin:$PATH" ;;
+      esac
 
 - name: Create user workspace directories
   ansible.builtin.file:
