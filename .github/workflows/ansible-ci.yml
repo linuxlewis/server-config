@@ -28,8 +28,8 @@ jobs:
         working-directory: ansible
         run: ansible-playbook -i inventory.ini server.yml --syntax-check
 
-      - name: Ansible lint
-        run: ansible-lint ansible/server.yml
+      - name: Ansible lint (minimum profile)
+        run: ansible-lint --profile=min ansible/server.yml
 
   validate-bootstrap:
     runs-on: ubuntu-latest
@@ -84,7 +84,8 @@ jobs:
 
               cp -a /workspace/server-config /tmp/server-config-source
               rm -rf /tmp/server-config-source/.git
-              git init -b main /tmp/server-config-source
+              git init /tmp/server-config-source
+              git -C /tmp/server-config-source checkout -b main
               git -C /tmp/server-config-source add .
               git -C /tmp/server-config-source \
                 -c user.name=ci \

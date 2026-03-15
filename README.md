@@ -86,7 +86,7 @@ cd ../docker && docker compose up -d
 GitHub Actions validates infrastructure changes on pull requests and pushes to `main`:
 
 - `ansible-playbook --syntax-check` against `ansible/server.yml`
-- `ansible-lint ansible/server.yml`
+- `ansible-lint --profile=min ansible/server.yml`
 - `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
 - An argument-parsing test that verifies bootstrap rejects unknown flags
 - A Debian Docker integration test that runs bootstrap to successful completion in containerized Linux (`--skip-ansible --skip-services`)
