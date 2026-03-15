@@ -1,5 +1,5 @@
 ---
-- name: Install development packages
+- name: Install Debian development toolchain packages
   ansible.builtin.apt:
     name:
       - python3
