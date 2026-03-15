@@ -43,7 +43,7 @@
   register: claude_install
   changed_when: "'already installed' not in claude_install.stderr"
 
-- name: Install OpenClaw CLI
+- name: Install global Node.js CLI tools
   community.general.npm:
     name: "{{ item }}"
     global: true

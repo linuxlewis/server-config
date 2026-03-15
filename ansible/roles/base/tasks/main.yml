@@ -27,9 +27,16 @@
   ansible.builtin.user:
     name: "{{ username }}"
     shell: /bin/bash
-    groups: docker,sudo
+    groups: sudo
     append: true
     create_home: true
+
+- name: Add dev user to docker group
+  ansible.builtin.user:
+    name: "{{ username }}"
+    groups: docker
+    append: true
+  when: not ci_mode
 
 - name: Configure SSH
   ansible.builtin.lineinfile:
@@ -42,12 +49,14 @@
     - regexp: "^#?PermitRootLogin"
       line: "PermitRootLogin no"
   notify: restart ssh
+  when: not ci_mode
 
 - name: Enable and start fail2ban
   ansible.builtin.systemd:
     name: fail2ban
     enabled: true
     state: started
+  when: not ci_mode
 
 - name: Disable server-config-update timer
   ansible.builtin.systemd:
@@ -55,6 +64,7 @@
     enabled: false
     state: stopped
   failed_when: false
+  when: not ci_mode
 
 - name: Remove server-config-update systemd units
   ansible.builtin.file:
@@ -64,6 +74,7 @@
     - /etc/systemd/system/server-config-update.service
     - /etc/systemd/system/server-config-update.timer
   notify: reload systemd
+  when: not ci_mode
 
 - name: Create persistent data directories
   ansible.builtin.file:

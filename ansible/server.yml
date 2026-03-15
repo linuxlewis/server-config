@@ -14,10 +14,14 @@
   vars:
     username: dev
     docker_data_dir: /opt/services
+    ci_mode: false
     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
 
   roles:
     - base
-    - docker
-    - dev
-    - networking
+    - role: docker
+      when: not ci_mode
+    - role: dev
+      when: not ci_mode
+    - role: networking
+      when: not ci_mode
