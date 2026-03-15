@@ -62,3 +62,39 @@ jobs:
           fi
 
           echo "$output" | grep -q "Unknown option: --not-a-real-flag"
+
+  bootstrap-integration-debian:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run bootstrap end-to-end in Debian container
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace/server-config \
+            -w /workspace/server-config \
+            debian:12 \
+            bash -lc '
+              set -euo pipefail
+
+              apt-get update
+              apt-get install -y git
+
+              cp -a /workspace/server-config /tmp/server-config-source
+              rm -rf /tmp/server-config-source/.git
+              git init -b main /tmp/server-config-source
+              git -C /tmp/server-config-source add .
+              git -C /tmp/server-config-source \
+                -c user.name=ci \
+                -c user.email=ci@example.com \
+                commit -m "bootstrap test source"
+
+              bash /workspace/server-config/bootstrap/bootstrap.sh \
+                --repo-url /tmp/server-config-source \
+                --branch main \
+                --dir /tmp/server-config-install \
+                --skip-ansible \
+                --skip-services
+            '
