@@ -1,0 +1,52 @@
+---
+- name: Verify
+  hosts: servers
+  gather_facts: false
+  tasks:
+    - name: Gather passwd database
+      ansible.builtin.getent:
+        database: passwd
+
+    - name: Gather group database
+      ansible.builtin.getent:
+        database: group
+
+    - name: Assert playbook uses configured username from environment
+      ansible.builtin.assert:
+        that:
+          - "'playbookuser' in ansible_facts.getent_passwd"
+
+    - name: Check configured user home directory
+      ansible.builtin.stat:
+        path: /home/playbookuser
+      register: user_home_dir
+
+    - name: Assert configured user home directory exists
+      ansible.builtin.assert:
+        that:
+          - user_home_dir.stat.exists
+          - user_home_dir.stat.isdir
+          - user_home_dir.stat.pw_name == 'playbookuser'
+
+    - name: Assert configured user is a member of sudo
+      ansible.builtin.assert:
+        that:
+          - "'sudo' in ansible_facts.getent_group"
+          - "'playbookuser' in ansible_facts.getent_group['sudo'][2].split(',')"
+
+    - name: Assert docker group membership is skipped when ci_mode is true
+      ansible.builtin.assert:
+        that:
+          - "'docker' not in ansible_facts.getent_group or 'playbookuser' not in ansible_facts.getent_group['docker'][2].split(',')"
+
+    - name: Check persistent data root
+      ansible.builtin.stat:
+        path: /opt/services
+      register: docker_data_dir
+
+    - name: Assert persistent data root exists with configured owner
+      ansible.builtin.assert:
+        that:
+          - docker_data_dir.stat.exists
+          - docker_data_dir.stat.isdir
+          - docker_data_dir.stat.pw_name == 'playbookuser'

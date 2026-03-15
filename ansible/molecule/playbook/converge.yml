@@ -1,0 +1,4 @@
+---
+- import_playbook: ../../server.yml
+  vars:
+    ci_mode: true

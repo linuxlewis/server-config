@@ -36,7 +36,7 @@ jobs:
 
       - name: Molecule test
         working-directory: ansible
-        run: uv run molecule test
+        run: uv run molecule test --all
 
   validate-bootstrap:
     runs-on: ubuntu-latest

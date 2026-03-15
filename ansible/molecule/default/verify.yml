@@ -3,14 +3,41 @@
   hosts: all
   gather_facts: false
   tasks:
+    - name: Gather installed package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
     - name: Gather passwd database
       ansible.builtin.getent:
         database: passwd
+
+    - name: Gather group database
+      ansible.builtin.getent:
+        database: group
 
     - name: Assert configured user exists
       ansible.builtin.assert:
         that:
           - "'molecule' in ansible_facts.getent_passwd"
+
+    - name: Assert expected base packages are installed
+      ansible.builtin.assert:
+        that:
+          - "'git' in ansible_facts.packages"
+          - "'curl' in ansible_facts.packages"
+          - "'ufw' in ansible_facts.packages"
+          - "'fail2ban' in ansible_facts.packages"
+
+    - name: Assert configured user is a member of sudo
+      ansible.builtin.assert:
+        that:
+          - "'sudo' in ansible_facts.getent_group"
+          - "'molecule' in ansible_facts.getent_group['sudo'][2].split(',')"
+
+    - name: Assert docker group membership is skipped in ci mode
+      ansible.builtin.assert:
+        that:
+          - "'docker' not in ansible_facts.getent_group or 'molecule' not in ansible_facts.getent_group['docker'][2].split(',')"
 
     - name: Check configured user home directory
       ansible.builtin.stat:
@@ -47,3 +74,13 @@
           - code_server_dir.stat.exists
           - code_server_dir.stat.isdir
           - code_server_dir.stat.pw_name == 'molecule'
+
+    - name: Check hostname file
+      ansible.builtin.command: cat /etc/hostname
+      changed_when: false
+      register: hostname_file
+
+    - name: Assert hostname matches inventory name
+      ansible.builtin.assert:
+        that:
+          - hostname_file.stdout == inventory_hostname

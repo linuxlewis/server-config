@@ -31,7 +31,7 @@ uv sync --group dev
 uv run ansible-galaxy collection install -r ansible/requirements.yml
 uv run ansible-playbook -i ansible/inventory.ini ansible/server.yml --syntax-check
 uv run ansible-lint --profile=min ansible/server.yml
-cd ansible && uv run molecule test
+cd ansible && uv run molecule test --all
 ```
 
 ## Ansible testing
@@ -39,6 +39,8 @@ cd ansible && uv run molecule test
 - Use Molecule for Ansible role/playbook regression testing instead of ad hoc shell scripts when feasible.
 - Keep Molecule scenarios small, deterministic, and focused on expected host state plus idempotence.
 - When changing role behavior, update Molecule verification or add a scenario if the behavior is not already covered.
+- Keep assertions meaningful: verify package presence, ownership, group membership, idempotence, and key variable wiring.
+- Use the `playbook` scenario when changing `ansible/server.yml` behavior or environment-variable driven defaults.
 
 ## PR hygiene
 - Include a short summary of what changed and why.

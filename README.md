@@ -99,7 +99,7 @@ uv sync --group dev
 uv run ansible-galaxy collection install -r ansible/requirements.yml
 uv run ansible-playbook -i ansible/inventory.ini ansible/server.yml --syntax-check
 uv run ansible-lint --profile=min ansible/server.yml
-cd ansible && uv run molecule test
+cd ansible && uv run molecule test --all
 ```
 
 ### Validate the Ansible playbook
@@ -258,7 +258,7 @@ CI validates infrastructure changes with:
 
 - `ansible-playbook --syntax-check` for `ansible/server.yml`
 - `ansible-lint --profile=min ansible/server.yml`
-- `molecule test` for the Ansible base-role harness
+- `molecule test --all` for the Ansible Molecule scenarios
 - `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
 - bootstrap argument parsing checks
 - a Debian integration run of bootstrap in CI mode
