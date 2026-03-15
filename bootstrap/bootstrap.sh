@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Reproducible Linux Dev Server - Bootstrap Script
+# Reproducible Debian Dev Server - Bootstrap Script
 # Usage: curl -fsSL <repo-url>/bootstrap/bootstrap.sh | bash
 # Or:    ./bootstrap.sh [--repo-url <url>] [--branch <branch>]
 
@@ -30,18 +30,15 @@ detect_os() {
     fi
 }
 
-install_dependencies_fedora() {
-    log "Installing dependencies (Fedora)..."
-    dnf install -y \
-        git \
-        ansible \
-        python3-pip \
-        curl \
-        wget
-}
+install_dependencies() {
+    local os
+    os=$(detect_os)
+    if [ "$os" != "debian" ]; then
+        log "Unsupported OS: $os. This bootstrap script supports Debian only."
+        exit 1
+    fi
 
-install_dependencies_ubuntu() {
-    log "Installing dependencies (Ubuntu/Debian)..."
+    log "Installing dependencies (Debian)..."
     apt-get update
     apt-get install -y \
         git \
@@ -50,16 +47,6 @@ install_dependencies_ubuntu() {
         curl \
         wget \
         software-properties-common
-}
-
-install_dependencies() {
-    local os
-    os=$(detect_os)
-    case "$os" in
-        fedora) install_dependencies_fedora ;;
-        ubuntu|debian) install_dependencies_ubuntu ;;
-        *) log "Unsupported OS: $os"; exit 1 ;;
-    esac
 }
 
 clone_repo() {

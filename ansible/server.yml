@@ -3,6 +3,14 @@
   hosts: servers
   become: true
 
+  pre_tasks:
+    - name: Require Debian hosts
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Debian"
+        fail_msg: "This playbook supports Debian only."
+        success_msg: "Running on supported Debian host."
+
   vars:
     username: dev
     docker_data_dir: /opt/services
