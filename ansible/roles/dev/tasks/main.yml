@@ -12,14 +12,21 @@
       - tmux
     state: present
 
-- name: Add Google Chrome repo key
-  ansible.builtin.apt_key:
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install Google Chrome repo key
+  ansible.builtin.get_url:
     url: https://dl.google.com/linux/linux_signing_key.pub
-    state: present
+    dest: /etc/apt/keyrings/google-chrome.asc
+    mode: "0644"
 
 - name: Add Google Chrome repo
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main"
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main"
     state: present
     filename: google-chrome
 

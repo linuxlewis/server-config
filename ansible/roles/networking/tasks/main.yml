@@ -1,19 +1,27 @@
----
-- name: Add package repository keys
-  ansible.builtin.apt_key:
-    url: "{{ item }}"
-    state: present
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install package repository keys
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
   loop:
-    - "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
-    - https://pkg.cloudflare.com/cloudflare-main.gpg
+    - url: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
+      dest: /etc/apt/keyrings/tailscale.gpg
+    - url: https://pkg.cloudflare.com/cloudflare-main.gpg
+      dest: /etc/apt/keyrings/cloudflare-main.gpg
 
 - name: Add package repositories
   ansible.builtin.apt_repository:
     repo: "{{ item }}"
     state: present
   loop:
-    - "deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
-    - "deb https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
+    - "deb [signed-by=/etc/apt/keyrings/tailscale.gpg] https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+    - "deb [signed-by=/etc/apt/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
 
 - name: Install networking packages
   ansible.builtin.apt:
