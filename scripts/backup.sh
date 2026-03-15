@@ -28,10 +28,6 @@ if ! restic snapshots &>/dev/null; then
     restic init
 fi
 
-# Dump databases before backup
-log "Dumping PostgreSQL databases..."
-docker exec postgres pg_dumpall -U "${POSTGRES_USER:-dev}" > /opt/backups/postgres_dump.sql
-
 # Build exclude args
 EXCLUDE_ARGS=()
 for pattern in "${EXCLUDE_PATTERNS[@]}"; do
@@ -42,7 +38,6 @@ done
 log "Starting backup..."
 restic backup \
     "${EXCLUDE_ARGS[@]}" \
-    /opt/backups/postgres_dump.sql \
     "${BACKUP_PATHS[@]}"
 
 # Prune old snapshots - keep 7 daily, 4 weekly, 6 monthly

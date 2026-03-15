@@ -1,12 +1,12 @@
-# Reproducible Linux Dev Server
+# Reproducible Debian Dev Server
 
-A fully reproducible home Linux server where configuration lives in Git, services run in Docker, and a fresh machine can rebuild itself in ~10 minutes.
+A fully reproducible Debian server where configuration lives in Git, services run in Docker, and a fresh machine can be rebuilt in ~10 minutes.
 
 ## Architecture
 
 ```
 Server
-├── Linux OS (Fedora/Ubuntu Server)
+├── Debian Server
 ├── Bootstrap Script → pulls this repo
 ├── Ansible → configures system
 ├── Docker → runs all services
@@ -20,7 +20,7 @@ Server
 ### Fresh Install
 
 ```bash
-# 1. Install base Linux OS (Fedora Server or Ubuntu Server)
+# 1. Install Debian
 
 # 2. Run bootstrap as root
 curl -fsSL <your-repo-url>/bootstrap/bootstrap.sh | \
@@ -46,6 +46,8 @@ cd ansible && ansible-playbook -i inventory.ini server.yml
 # Start services
 cd ../docker && docker compose up -d
 ```
+
+The playbook is applied manually. This repo no longer installs any cron job or systemd timer to re-run itself automatically.
 
 ## Repository Structure
 
@@ -76,8 +78,6 @@ cd ../docker && docker compose up -d
 | Service | URL | Description |
 |---------|-----|-------------|
 | code-server | `dev.home` | VS Code in the browser |
-|PostgreSQL | internal | Database |
-| Redis | internal | Cache |
 | Caddy | ports 80/443 | Reverse proxy with auto TLS |
 
 
@@ -104,7 +104,7 @@ Installed globally on the host via Ansible:
 - **base** - System packages, user setup, SSH hardening, fail2ban, directory structure
 - **docker** - Docker CE and Compose plugin installation
 - **dev** - Development tools (Python, Node.js, build tools, Claude Code, OpenClaw, Codex CLI)
-- **networking** - Tailscale VPN, firewall rules (firewalld/ufw)
+- **networking** - Tailscale VPN, cloudflared, and Debian UFW rules
 
 ## Backups
 
@@ -128,7 +128,8 @@ export RESTIC_PASSWORD=your-password
 **What gets backed up:**
 - `/home` - User data
 - `/opt/services` - Docker persistent volumes
-- PostgreSQL database dumps
+
+Database backups are no longer part of the generic stack. Any app-specific data services should be backed up by the stack that owns them.
 
 **Retention:** 7 daily, 4 weekly, 6 monthly snapshots.
 
@@ -136,7 +137,7 @@ export RESTIC_PASSWORD=your-password
 
 If hardware fails:
 
-1. Install Linux
+1. Install Debian
 2. Run bootstrap script
 3. Restore backups
 
@@ -158,9 +159,6 @@ Copy `docker/.env.example` to `docker/.env` and set:
 
 | Variable | Description |
 |----------|-------------|
-| `POSTGRES_PASSWORD` | PostgreSQL password (required) |
-| `POSTGRES_USER` | PostgreSQL user (default: `dev`) |
-| `POSTGRES_DB` | PostgreSQL database (default: `devdb`) |
 | `CODE_SERVER_PASSWORD` | VS Code server password (default: `changeme`) |
 
 ### Tailscale
