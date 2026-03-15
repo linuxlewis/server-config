@@ -60,7 +60,7 @@
 - name: Require Node.js 22.12 or newer
   ansible.builtin.assert:
     that:
-      - "node_version.stdout is version('22.12.0', '>=')"
+      - "(node_version.stdout | regex_replace('^v', '')) is version('22.12.0', '>=')"
     fail_msg: "Node.js 22.12.0+ is required, found {{ node_version.stdout }}"
     success_msg: "Node.js version is {{ node_version.stdout }}"
 
