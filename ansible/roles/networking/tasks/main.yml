@@ -46,6 +46,12 @@
   when: tailscale_authkey | length > 0
   changed_when: false
 
+- name: Enable Tailscale SSH
+  ansible.builtin.command:
+    cmd: tailscale set --ssh=true
+  when: tailscale_authkey | length > 0
+  changed_when: false
+
 - name: Configure Tailscale Serve for code-server
   ansible.builtin.command:
     cmd: tailscale serve --bg --https=443 http://localhost:8080

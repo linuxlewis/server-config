@@ -40,7 +40,7 @@
     line: "{{ item.line }}"
   loop:
     - regexp: "^#?PasswordAuthentication"
-      line: "PasswordAuthentication no"
+      line: "PasswordAuthentication {{ 'no' if disable_ssh_password_auth else 'yes' }}"
     - regexp: "^#?PermitRootLogin"
       line: "PermitRootLogin no"
   notify: restart ssh
