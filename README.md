@@ -42,16 +42,18 @@ Optional environment variables:
 
 ### Fresh Install
 
-Run the bootstrap flow as `root`. It installs dependencies, clones the repo into `/opt/server-config`, runs Ansible, and starts the Docker stack.
+Run the bootstrap flow as `root`. It installs dependencies, clones the repo into `/opt/server-config`, and runs Ansible. After that, create `docker/.env` and start the Docker stack.
 
 ```bash
 sudo -i
 export REPO_URL='https://github.com/linuxlewis/server-config.git'
 export REPO_BRANCH='main'
+export SKIP_SERVICES=1
 curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
 cd /opt/server-config
-cp docker/.env.example docker/.env
-printf 'CODE_SERVER_PASSWORD=replace-this\n' > docker/.env
+cat > docker/.env <<'EOF'
+CODE_SERVER_PASSWORD=replace-this
+EOF
 cd docker
 docker compose up -d
 docker compose ps
@@ -64,9 +66,11 @@ Use this if you already copied the repo onto the server and want the bootstrap l
 ```bash
 sudo -i
 cd /opt/server-config
+export SKIP_SERVICES=1
 bash bootstrap/bootstrap.sh --repo-url https://github.com/linuxlewis/server-config.git --branch main --dir /opt/server-config
-cp docker/.env.example docker/.env
-printf 'CODE_SERVER_PASSWORD=replace-this\n' > docker/.env
+cat > docker/.env <<'EOF'
+CODE_SERVER_PASSWORD=replace-this
+EOF
 cd docker
 docker compose up -d
 docker compose ps
@@ -80,8 +84,9 @@ Use this if you want to run each step yourself instead of piping the bootstrap s
 sudo -i
 git clone https://github.com/linuxlewis/server-config.git /opt/server-config
 cd /opt/server-config
-cp docker/.env.example docker/.env
-printf 'CODE_SERVER_PASSWORD=replace-this\n' > docker/.env
+cat > docker/.env <<'EOF'
+CODE_SERVER_PASSWORD=replace-this
+EOF
 cd ansible
 ansible-playbook -i inventory.ini server.yml --diff
 cd ../docker
