@@ -89,7 +89,7 @@ GitHub Actions validates infrastructure changes on pull requests and pushes to `
 - `ansible-lint --profile=min ansible/server.yml`
 - `bash -n` and `shellcheck` for `bootstrap/bootstrap.sh`
 - An argument-parsing test that verifies bootstrap rejects unknown flags
-- A Debian Docker integration test that runs bootstrap to successful completion in containerized Linux (`--skip-ansible --skip-services`)
+- A Debian Docker integration test that runs bootstrap through the Ansible step in CI mode (`ANSIBLE_EXTRA_VARS=ci_mode=true`) and skips Docker service startup
 
 ## AI CLI Tools
 

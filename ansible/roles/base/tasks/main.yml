@@ -51,7 +51,7 @@
   ansible.builtin.user:
     name: "{{ username }}"
     shell: /bin/bash
-    groups: docker,sudo
+    groups: "{{ 'sudo' if ci_mode else 'docker,sudo' }}"
     append: true
     create_home: true
 
@@ -61,6 +61,7 @@
     regexp: "^#?PasswordAuthentication"
     line: "PasswordAuthentication no"
   notify: restart sshd
+  when: not ci_mode
 
 - name: Configure SSH - disable root login
   ansible.builtin.lineinfile:
@@ -68,12 +69,14 @@
     regexp: "^#?PermitRootLogin"
     line: "PermitRootLogin no"
   notify: restart sshd
+  when: not ci_mode
 
 - name: Enable and start fail2ban
   ansible.builtin.systemd:
     name: fail2ban
     enabled: true
     state: started
+  when: not ci_mode
 
 # Scheduled playbook run via systemd timer
 - name: Install server-config-update service
@@ -94,6 +97,7 @@
       StandardError=journal
     mode: "0644"
   notify: reload systemd
+  when: not ci_mode
 
 - name: Install server-config-update timer
   ansible.builtin.copy:
@@ -111,12 +115,14 @@
       WantedBy=timers.target
     mode: "0644"
   notify: reload systemd
+  when: not ci_mode
 
 - name: Enable server-config-update timer
   ansible.builtin.systemd:
     name: server-config-update.timer
     enabled: true
     state: started
+  when: not ci_mode
 
 - name: Create persistent data directories
   ansible.builtin.file:

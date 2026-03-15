@@ -88,10 +88,10 @@ jobs:
                 -c user.email=ci@example.com \
                 commit -m "bootstrap test source"
 
+              ANSIBLE_EXTRA_VARS=ci_mode=true \
               bash /workspace/server-config/bootstrap/bootstrap.sh \
                 --repo-url /tmp/server-config-source \
                 --branch main \
                 --dir /tmp/server-config-install \
-                --skip-ansible \
                 --skip-services
             '

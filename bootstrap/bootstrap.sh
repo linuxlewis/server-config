@@ -10,6 +10,7 @@ REPO_BRANCH="${REPO_BRANCH:-main}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/server-config}"
 SKIP_ANSIBLE="${SKIP_ANSIBLE:-0}"
 SKIP_SERVICES="${SKIP_SERVICES:-0}"
+ANSIBLE_EXTRA_VARS="${ANSIBLE_EXTRA_VARS:-}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -78,6 +79,8 @@ clone_repo() {
 }
 
 run_ansible() {
+    local ansible_cmd
+
     [ "$SKIP_ANSIBLE" = "1" ] && {
         log "Skipping Ansible playbook (--skip-ansible enabled)"
         return
@@ -85,7 +88,13 @@ run_ansible() {
 
     log "Running Ansible playbook..."
     cd "$INSTALL_DIR/ansible"
-    ansible-playbook -i inventory.ini server.yml --diff
+    ansible_cmd=(ansible-playbook -i inventory.ini server.yml --diff)
+
+    if [ -n "$ANSIBLE_EXTRA_VARS" ]; then
+        ansible_cmd+=(--extra-vars "$ANSIBLE_EXTRA_VARS")
+    fi
+
+    "${ansible_cmd[@]}"
 }
 
 start_services() {
