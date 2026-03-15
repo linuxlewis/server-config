@@ -109,6 +109,7 @@ install_dependencies() {
         git \
         ansible \
         python3-pip \
+        gpg \
         curl \
         wget
 }

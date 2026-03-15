@@ -15,6 +15,7 @@
       - gh
       - tmux
       - htop
+      - gpg
       - curl
       - wget
       - vim
