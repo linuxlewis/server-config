@@ -1,0 +1,133 @@
+---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update all packages
+  ansible.builtin.package:
+    name: "*"
+    state: latest
+  when: ansible_os_family == "RedHat"
+
+- name: Update all packages (Debian)
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install base packages (RedHat)
+  ansible.builtin.dnf:
+    name:
+      - git
+      - tmux
+      - htop
+      - curl
+      - wget
+      - vim
+      - jq
+      - unzip
+      - fail2ban
+      - firewalld
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install base packages (Debian)
+  ansible.builtin.apt:
+    name:
+      - git
+      - tmux
+      - htop
+      - curl
+      - wget
+      - vim
+      - jq
+      - unzip
+      - fail2ban
+      - ufw
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create dev user
+  ansible.builtin.user:
+    name: "{{ username }}"
+    shell: /bin/bash
+    groups: docker,sudo
+    append: true
+    create_home: true
+
+- name: Configure SSH - disable password auth
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PasswordAuthentication"
+    line: "PasswordAuthentication no"
+  notify: restart sshd
+
+- name: Configure SSH - disable root login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin no"
+  notify: restart sshd
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+# Scheduled playbook run via systemd timer
+- name: Install server-config-update service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/server-config-update.service
+    content: |
+      [Unit]
+      Description=Pull latest server-config and run Ansible playbook
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      WorkingDirectory=/opt/server-config
+      ExecStartPre=/usr/bin/git pull origin main
+      ExecStart=/usr/bin/ansible-playbook -i ansible/inventory.ini ansible/server.yml --diff
+      StandardOutput=journal
+      StandardError=journal
+    mode: "0644"
+  notify: reload systemd
+
+- name: Install server-config-update timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/server-config-update.timer
+    content: |
+      [Unit]
+      Description=Run server-config playbook daily
+
+      [Timer]
+      OnCalendar=daily
+      Persistent=true
+      RandomizedDelaySec=1h
+
+      [Install]
+      WantedBy=timers.target
+    mode: "0644"
+  notify: reload systemd
+
+- name: Enable server-config-update timer
+  ansible.builtin.systemd:
+    name: server-config-update.timer
+    enabled: true
+    state: started
+
+- name: Create persistent data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - "{{ docker_data_dir }}"
+    - "{{ docker_data_dir }}/postgres"
+    - "{{ docker_data_dir }}/redis"
+    - "{{ docker_data_dir }}/code-server"
+    - /opt/backups

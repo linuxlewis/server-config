@@ -1,0 +1,114 @@
+---
+- name: Install Tailscale (RedHat)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Add Tailscale repo (Fedora)
+      ansible.builtin.command:
+        cmd: dnf config-manager --add-repo https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+      args:
+        creates: /etc/yum.repos.d/tailscale.repo
+
+    - name: Install Tailscale (Fedora)
+      ansible.builtin.dnf:
+        name: tailscale
+        state: present
+
+- name: Install Tailscale (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Add Tailscale GPG key
+      ansible.builtin.apt_key:
+        url: https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg
+        state: present
+
+    - name: Add Tailscale repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://pkgs.tailscale.com/stable/ubuntu {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Tailscale (Ubuntu)
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: true
+
+- name: Enable and start Tailscale
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Connect to Tailscale network
+  ansible.builtin.command:
+    cmd: "tailscale up --authkey={{ tailscale_authkey }}"
+  when: tailscale_authkey | length > 0
+  changed_when: false
+
+- name: Configure Tailscale Serve for code-server
+  ansible.builtin.command:
+    cmd: tailscale serve --bg --https=443 http://localhost:8080
+  changed_when: false
+
+- name: Install cloudflared (RedHat)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Add cloudflared RPM repo
+      ansible.builtin.yum_repository:
+        name: cloudflared
+        description: Cloudflare Tunnel
+        baseurl: https://pkg.cloudflare.com/cloudflared/rpm
+        gpgcheck: false
+        enabled: true
+
+    - name: Install cloudflared (Fedora)
+      ansible.builtin.dnf:
+        name: cloudflared
+        state: present
+
+- name: Install cloudflared (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Add cloudflared GPG key
+      ansible.builtin.apt_key:
+        url: https://pkg.cloudflare.com/cloudflare-main.gpg
+        state: present
+
+    - name: Add cloudflared repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install cloudflared (Ubuntu)
+      ansible.builtin.apt:
+        name: cloudflared
+        state: present
+        update_cache: true
+
+- name: Configure firewall (RedHat)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Enable firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: true
+        state: started
+
+    - name: Allow SSH through firewall
+      ansible.posix.firewalld:
+        service: ssh
+        permanent: true
+        state: enabled
+      notify: reload firewall
+
+- name: Configure firewall (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Allow SSH through UFW
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: deny
