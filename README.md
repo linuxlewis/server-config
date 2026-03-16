@@ -53,6 +53,13 @@ curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/boots
 
 This installs bootstrap dependencies, prompts for any missing values, clones the repo into `/opt/server-config`, writes `docker/.env`, runs [`ansible/server.yml`](ansible/server.yml), and starts the Docker Compose stack.
 
+Verify that the stack came up:
+
+```bash
+cd /opt/server-config/docker
+docker compose ps
+```
+
 ### Unattended bootstrap
 
 Use this when you want a fully copy-pasteable bootstrap with no prompts:
@@ -92,13 +99,12 @@ Use this when you want each step broken out explicitly:
 sudo -i
 git clone https://github.com/linuxlewis/server-config.git /opt/server-config
 cd /opt/server-config
-cp docker/.env.example docker/.env
 cat > docker/.env <<'EOF'
 SERVER_USERNAME=dev
 CODE_SERVER_PASSWORD=replace-this-password
 EOF
-cd ansible
 export SERVER_USERNAME='dev'
+cd ansible
 ansible-playbook -i inventory.ini server.yml --diff
 cd /opt/server-config/docker
 docker compose up -d
@@ -154,8 +160,8 @@ Update the machine from the checked-out repo:
 ```bash
 cd /opt/server-config
 git pull --ff-only
-cd ansible
 export SERVER_USERNAME='dev'
+cd ansible
 ansible-playbook -i inventory.ini server.yml --diff
 cd ../docker
 docker compose up -d
