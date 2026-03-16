@@ -41,9 +41,11 @@ Optional environment variables:
 
 ## Quick Start
 
+Pick one of the command blocks below and replace the sample values before you run it.
+
 ### Bootstrap a fresh Debian server
 
-Run this as `root` on the target server:
+Use this when you want the shortest path and do not mind answering prompts for anything you did not export up front:
 
 ```bash
 sudo -i
@@ -79,7 +81,7 @@ docker compose ps
 
 ### Bootstrap from an existing clone
 
-Use this if the repo is already on the server and you want to reuse it:
+Use this if `/opt/server-config` already exists on the server and you want to reuse that checkout:
 
 ```bash
 sudo -i
@@ -93,7 +95,7 @@ docker compose ps
 
 ### Manual setup
 
-Use this when you want each step broken out explicitly:
+Use this when you want each step broken out explicitly instead of using the bootstrap script:
 
 ```bash
 sudo -i
