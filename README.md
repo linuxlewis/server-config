@@ -41,14 +41,15 @@ Optional environment variables:
 
 ## Quick Start
 
-Pick one of the command blocks below and replace the sample values before you run it.
+Pick one of the command blocks below, replace the sample values, and run it as written.
 
 ### Bootstrap a fresh Debian server
 
-Use this when you want the shortest path and do not mind answering prompts for anything you did not export up front:
+Use this when you want the shortest path while still keeping the command block copy-pasteable:
 
 ```bash
 sudo -i
+export SERVER_USERNAME='dev'
 export CODE_SERVER_PASSWORD='replace-this-password'
 curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
 ```
