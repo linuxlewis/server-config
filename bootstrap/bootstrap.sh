@@ -2,12 +2,15 @@
 set -euo pipefail
 
 # Reproducible Debian Dev Server - Bootstrap Script
-# Usage: curl -fsSL <repo-url>/bootstrap/bootstrap.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
 # Or:    ./bootstrap.sh [--repo-url <url>] [--branch <branch>] [--dir <path>]
 
-REPO_URL="${REPO_URL:-https://github.com/YOUR_USER/server-config.git}"
+REPO_URL="${REPO_URL:-https://github.com/linuxlewis/server-config.git}"
 REPO_BRANCH="${REPO_BRANCH:-main}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/server-config}"
+SERVER_USERNAME="${SERVER_USERNAME:-dev}"
+CODE_SERVER_PASSWORD="${CODE_SERVER_PASSWORD:-}"
+TAILSCALE_AUTHKEY="${TAILSCALE_AUTHKEY:-}"
 SKIP_ANSIBLE="${SKIP_ANSIBLE:-0}"
 SKIP_SERVICES="${SKIP_SERVICES:-0}"
 ANSIBLE_EXTRA_VARS="${ANSIBLE_EXTRA_VARS:-}"
@@ -25,6 +28,62 @@ while [[ $# -gt 0 ]]; do
 done
 
 log() { echo "[bootstrap] $*"; }
+
+can_prompt() {
+    [ -r /dev/tty ] && [ -w /dev/tty ]
+}
+
+prompt_with_default() {
+    local prompt="$1"
+    local default_value="$2"
+    local response
+
+    if ! can_prompt; then
+        echo "$default_value"
+        return
+    fi
+
+    read -r -p "$prompt [$default_value]: " response </dev/tty
+    echo "${response:-$default_value}"
+}
+
+prompt_secret() {
+    local prompt="$1"
+    local response
+
+    if ! can_prompt; then
+        echo ""
+        return
+    fi
+
+    read -r -s -p "$prompt: " response </dev/tty
+    echo >&2
+    echo "$response"
+}
+
+configure_variables() {
+    if can_prompt; then
+        log "Collecting configuration..."
+        SERVER_USERNAME=$(prompt_with_default "Linux username" "$SERVER_USERNAME")
+
+        if [ -z "$CODE_SERVER_PASSWORD" ]; then
+            CODE_SERVER_PASSWORD=$(prompt_secret "code-server password")
+        fi
+
+        if [ -z "$TAILSCALE_AUTHKEY" ]; then
+            TAILSCALE_AUTHKEY=$(prompt_with_default "Tailscale auth key (optional)" "")
+        fi
+    fi
+
+    if [ -z "$CODE_SERVER_PASSWORD" ]; then
+        log "Error: CODE_SERVER_PASSWORD must be set."
+        exit 1
+    fi
+
+    export SERVER_USERNAME
+    export CODE_SERVER_PASSWORD
+    export TAILSCALE_AUTHKEY
+}
 
 detect_os() {
     if [ -f /etc/os-release ]; then
@@ -50,9 +109,9 @@ install_dependencies() {
         git \
         ansible \
         python3-pip \
+        gpg \
         curl \
-        wget \
-        software-properties-common
+        wget
 }
 
 clone_repo() {
@@ -63,6 +122,14 @@ clone_repo() {
         log "Cloning infrastructure repo..."
         git clone --branch "$REPO_BRANCH" "$REPO_URL" "$INSTALL_DIR"
     fi
+}
+
+write_docker_env() {
+    log "Writing docker/.env..."
+    cat > "$INSTALL_DIR/docker/.env" <<EOF
+SERVER_USERNAME=$SERVER_USERNAME
+CODE_SERVER_PASSWORD=$CODE_SERVER_PASSWORD
+EOF
 }
 
 run_ansible() {
@@ -108,7 +175,9 @@ main() {
     fi
 
     install_dependencies
+    configure_variables
     clone_repo
+    write_docker_env
     run_ansible
     start_services
 

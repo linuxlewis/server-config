@@ -12,10 +12,11 @@
         success_msg: "Running on supported Debian host."
 
   vars:
-    username: dev
+    username: "{{ lookup('env', 'SERVER_USERNAME') | default('dev', true) }}"
     docker_data_dir: /opt/services
     ci_mode: false
     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
+    enable_firewall: false
 
   roles:
     - base

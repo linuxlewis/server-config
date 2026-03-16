@@ -1,19 +1,30 @@
----
-- name: Add package repository keys
-  ansible.builtin.apt_key:
-    url: "{{ item }}"
-    state: present
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install package repository keys
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
   loop:
-    - "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
-    - https://pkg.cloudflare.com/cloudflare-main.gpg
+    - url: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
+      dest: /etc/apt/keyrings/tailscale.gpg
+    - url: https://pkg.cloudflare.com/cloudflare-public-v2.gpg
+      dest: /etc/apt/keyrings/cloudflare-public-v2.gpg
 
 - name: Add package repositories
-  ansible.builtin.apt_repository:
-    repo: "{{ item }}"
-    state: present
+  ansible.builtin.copy:
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    content: "{{ item.repo }}\n"
   loop:
-    - "deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
-    - "deb https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
+    - dest: /etc/apt/sources.list.d/tailscale.list
+      repo: "deb [signed-by=/etc/apt/keyrings/tailscale.gpg] https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+    - dest: /etc/apt/sources.list.d/cloudflared.list
+      repo: "deb [signed-by=/etc/apt/keyrings/cloudflare-public-v2.gpg] https://pkg.cloudflare.com/cloudflared any main"
 
 - name: Install networking packages
   ansible.builtin.apt:
@@ -35,6 +46,12 @@
   when: tailscale_authkey | length > 0
   changed_when: false
 
+- name: Enable Tailscale SSH
+  ansible.builtin.command:
+    cmd: tailscale set --ssh=true
+  when: tailscale_authkey | length > 0
+  changed_when: false
+
 - name: Configure Tailscale Serve for code-server
   ansible.builtin.command:
     cmd: tailscale serve --bg --https=443 http://localhost:8080
@@ -44,8 +61,17 @@
   community.general.ufw:
     rule: allow
     name: OpenSSH
+  when: enable_firewall
+
+- name: Allow Tailscale traffic through UFW
+  community.general.ufw:
+    rule: allow
+    direction: in
+    interface: tailscale0
+  when: enable_firewall
 
 - name: Enable UFW
   community.general.ufw:
     state: enabled
     policy: deny
+  when: enable_firewall

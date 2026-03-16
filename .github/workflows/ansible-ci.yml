@@ -19,17 +19,24 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install Ansible dependencies
         run: |
-          python -m pip install --upgrade pip ansible-core ansible-lint
-          ansible-galaxy collection install -r ansible/requirements.yml
+          uv sync --group dev
+          uv run ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Ansible syntax check
         working-directory: ansible
-        run: ansible-playbook -i inventory.ini server.yml --syntax-check
+        run: uv run ansible-playbook -i inventory.ini server.yml --syntax-check
 
       - name: Ansible lint (minimum profile)
-        run: ansible-lint --profile=min ansible/server.yml
+        run: uv run ansible-lint --profile=min ansible/server.yml
+
+      - name: Molecule test
+        working-directory: ansible
+        run: uv run molecule test --all
 
   validate-bootstrap:
     runs-on: ubuntu-latest
@@ -88,6 +95,7 @@ jobs:
                 -c user.email=ci@example.com \
                 commit -m "bootstrap test source"
 
+              export CODE_SERVER_PASSWORD=ci-password
               ANSIBLE_EXTRA_VARS=ci_mode=true \
               bash /workspace/server-config/bootstrap/bootstrap.sh \
                 --repo-url /tmp/server-config-source \

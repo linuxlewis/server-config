@@ -5,29 +5,65 @@
       - python3
       - python3-pip
       - python3-venv
-      - nodejs
-      - npm
       - golang
       - build-essential
       - tmux
     state: present
 
-- name: Add Google Chrome repo key
-  ansible.builtin.apt_key:
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install Google Chrome repo key
+  ansible.builtin.get_url:
     url: https://dl.google.com/linux/linux_signing_key.pub
-    state: present
+    dest: /etc/apt/keyrings/google-chrome.asc
+    mode: "0644"
+
+- name: Install NodeSource repo key
+  ansible.builtin.get_url:
+    url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+    dest: /etc/apt/keyrings/nodesource.asc
+    mode: "0644"
 
 - name: Add Google Chrome repo
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/google-chrome.list
+    mode: "0644"
+    content: |
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main
+
+- name: Add NodeSource repo
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main"
+    repo: "deb [signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_24.x nodistro main"
     state: present
-    filename: google-chrome
+    filename: nodesource
 
 - name: Install Google Chrome
   ansible.builtin.apt:
     name: google-chrome-stable
     state: present
     update_cache: true
+
+- name: Install Node.js LTS
+  ansible.builtin.apt:
+    name: nodejs
+    state: latest
+    update_cache: true
+
+- name: Check installed Node.js version
+  ansible.builtin.command: node --version
+  register: node_version
+  changed_when: false
+
+- name: Require Node.js 22.12 or newer
+  ansible.builtin.assert:
+    that:
+      - "(node_version.stdout | regex_replace('^v', '')) is version('22.12.0', '>=')"
+    fail_msg: "Node.js 22.12.0+ is required, found {{ node_version.stdout }}"
+    success_msg: "Node.js version is {{ node_version.stdout }}"
 
 - name: Install or update uv (Python package manager)
   ansible.builtin.shell: |
@@ -43,24 +79,7 @@
   register: claude_install
   changed_when: "'already installed' not in claude_install.stderr"
 
-- name: Install global Node.js CLI tools
-  community.general.npm:
-    name: "{{ item }}"
-    global: true
-    state: latest
-  loop:
-    - openclaw
-    - "@openai/codex"
-    - "@bitwarden/cli"
-
-- name: Install OpenClaw gateway daemon with Tailscale Serve
-  ansible.builtin.command:
-    cmd: openclaw gateway install --tailscale serve
-  args:
-    creates: /etc/systemd/system/openclaw-gateway.service
-  become_user: "{{ username }}"
-
-- name: Create dev workspace directories
+- name: Create user npm prefix directories
   ansible.builtin.file:
     path: "/home/{{ username }}/{{ item }}"
     state: directory
@@ -68,5 +87,39 @@
     group: "{{ username }}"
     mode: "0755"
   loop:
-    - projects
+    - .npm-global
+    - .npm-global/bin
+
+- name: Configure user npm prefix and PATH
+  ansible.builtin.copy:
+    dest: "/home/{{ username }}/.npmrc"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0644"
+    content: |
+      prefix=${HOME}/.npm-global
+
+- name: Ensure user PATH includes npm global bin
+  ansible.builtin.blockinfile:
+    path: "/home/{{ username }}/.profile"
+    marker: "# {mark} ANSIBLE MANAGED NPM PATH"
+    create: true
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0644"
+    block: |
+      case ":$PATH:" in
+        *":$HOME/.npm-global/bin:"*) ;;
+        *) export PATH="$HOME/.npm-global/bin:$PATH" ;;
+      esac
+
+- name: Create user workspace directories
+  ansible.builtin.file:
+    path: "/home/{{ username }}/{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0755"
+  loop:
+    - workspace
     - .config

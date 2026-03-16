@@ -1,0 +1,16 @@
+[project]
+name = "server-config"
+version = "0.1.0"
+description = "Tooling for testing the server-config Ansible repository"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = [
+  "ansible-core>=2.20,<2.21",
+  "ansible-lint>=25.0.0,<26.0.0",
+  "molecule>=25.0.0,<26.0.0",
+  "molecule-plugins[docker]>=23.0.0,<24.0.0",
+]
+
+[tool.uv]
+package = false

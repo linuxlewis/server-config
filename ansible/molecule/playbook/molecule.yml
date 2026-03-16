@@ -1,0 +1,40 @@
+---
+driver:
+  name: docker
+
+platforms:
+  - name: debian12-playbook
+    groups:
+      - servers
+    image: geerlingguy/docker-debian12-ansible:latest
+    pre_build_image: true
+    user: root
+    command: sleep infinity
+
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "1"
+    ANSIBLE_ROLES_PATH: roles
+    SERVER_USERNAME: playbookuser
+    TAILSCALE_AUTHKEY: ""
+  config_options:
+    defaults:
+      deprecation_warnings: false
+  playbooks:
+    converge: converge.yml
+
+scenario:
+  create_sequence:
+    - create
+  destroy_sequence:
+    - destroy
+  test_sequence:
+    - create
+    - converge
+    - idempotence
+    - verify
+    - destroy
+
+verifier:
+  name: ansible
