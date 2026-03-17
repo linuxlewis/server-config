@@ -41,7 +41,7 @@ Optional environment variables:
 
 ## Quick Start
 
-Pick one of the command blocks below, replace the sample values, and run it as written.
+Every block below is intended to be copy-pasteable as-is after you replace the sample values.
 
 ### Bootstrap a fresh Debian server
 
@@ -52,16 +52,11 @@ sudo -i
 export SERVER_USERNAME='dev'
 export CODE_SERVER_PASSWORD='replace-this-password'
 curl -fsSL https://raw.githubusercontent.com/linuxlewis/server-config/main/bootstrap/bootstrap.sh | bash
-```
-
-This installs bootstrap dependencies, prompts for any missing values, clones the repo into `/opt/server-config`, writes `docker/.env`, runs [`ansible/server.yml`](ansible/server.yml), and starts the Docker Compose stack.
-
-Verify that the stack came up:
-
-```bash
 cd /opt/server-config/docker
 docker compose ps
 ```
+
+This installs bootstrap dependencies, prompts for any missing values, clones the repo into `/opt/server-config`, writes `docker/.env`, runs [`ansible/server.yml`](ansible/server.yml), and starts the Docker Compose stack.
 
 ### Unattended bootstrap
 
